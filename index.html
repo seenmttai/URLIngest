@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <base href="draganddroplinks.co" target="_blank">
     <style>
@@ -457,7 +458,7 @@
             '.tiff', '.svg', '.ico', '.psd', '.ai', '.eps', '.ps', '.ttf', '.otf', '.woff',
             '.woff2', '.eot', '.odt', '.ods', '.odp', '.odg', '.odf'
         ];
-        
+
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, preventDefaults, false);
             document.body.addEventListener(eventName, preventDefaults, false);
@@ -697,6 +698,26 @@
             }
         }
 
+        async function fetchWithCORSBypass(url) {
+            const corsProxies = [
+                'https://api.allorigins.win/raw?url=',
+                'https://corsproxy.io/?',
+                'https://cors.zserge.com/?u='
+            ];
+
+            for (const proxy of corsProxies) {
+                try {
+                    const response = await fetch(proxy + encodeURIComponent(url));
+                    if (response.ok) {
+                        return await response.text();
+                    }
+                } catch (error) {
+                    console.error('Error with proxy:', proxy, error);
+                }
+            }
+            throw new Error('Failed to bypass CORS with all proxies');
+        }
+
         deepParseButton.addEventListener('click', async () => {
             const links = document.querySelectorAll('.link-text');
             if (links.length === 0) {
@@ -725,10 +746,7 @@
                 status.innerHTML = `<div class="progress-item">Processing: ${url}</div>` + status.innerHTML;
 
                 try {
-                    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-                    const response = await fetch(proxyUrl);
-                    const html = await response.text();
-
+                    const html = await fetchWithCORSBypass(url);
                     const content = await handleContent(url, html, isTextOnly);
 
                     const contentSection = `
@@ -784,10 +802,7 @@
                     continue;
                 }
                 try {
-                    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-                    const response = await fetch(proxyUrl);
-                    const html = await response.text();
-
+                    const html = await fetchWithCORSBypass(url);
                     const content = await handleContent(url, html, isTextOnly);
 
                     const contentSection = `
@@ -809,22 +824,28 @@
         });
 
         copyAllButton.addEventListener('click', () => {
-            const allContent = Array.from(textContent.getElementsByClassName('markdown-content, parsed-content'))
-                .filter(element => element)
+            const allContent = Array.from(textContent.querySelectorAll('.content-section'))
                 .map(section => {
-                    const title = section.closest('.content-section')?.querySelector('h3')?.textContent || '';
-                    const content = section.textContent || '';
+                    const title = section.querySelector('h3')?.textContent || '';
+                    const content = section.querySelector('.markdown-content, .parsed-content')?.textContent || '';
                     return `${title}\n\n${content}\n\n`;
                 })
                 .join('---\n\n');
 
             if (allContent) {
-                navigator.clipboard.writeText(allContent).then(() => {
-                    copyAllButton.textContent = 'All Content Copied!';
-                    setTimeout(() => {
-                        copyAllButton.textContent = 'Copy All Content';
-                    }, 2000);
-                });
+                navigator.clipboard.writeText(allContent)
+                    .then(() => {
+                        copyAllButton.textContent = 'All Content Copied!';
+                        setTimeout(() => {
+                            copyAllButton.textContent = 'Copy All Content';
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy content:', err);
+                        copyAllButton.textContent = 'Copy Failed';
+                    });
+            } else {
+                copyAllButton.textContent = 'Nothing to Copy';
             }
         });
 
