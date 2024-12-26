@@ -780,19 +780,7 @@
                 const formatted = paragraphs.join('\n\n');
                 return marked.parse(formatted);
             } else {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-
-                if (!includeScripts.checked) {
-                    doc.querySelectorAll('script').forEach(el => el.remove());
-                }
-                if (!includeStyles.checked) {
-                    doc.querySelectorAll('style').forEach(el => el.remove());
-                }
-
-                return doc.documentElement.outerHTML
-                    .replace(/</g, '<')
-                    .replace(/>/g, '>');
+                return html;
             }
         }
 
@@ -924,8 +912,11 @@
         copyAllButton.addEventListener('click', () => {
             const allContent = Array.from(textContent.querySelectorAll('.content-section'))
                 .map(section => {
-                    const title = section.querySelector('h3')?.textContent || '';
-                    const content = section.querySelector('.markdown-content, .parsed-content')?.textContent || '';
+                    const titleElement = section.querySelector('h3');
+                    const contentElement = section.querySelector('.markdown-content, .parsed-content');
+                    
+                    const title = titleElement ? titleElement.textContent : '';
+                    const content = contentElement ? (textOnlyToggle.checked ? contentElement.textContent : contentElement.innerHTML) : '';
                     return `${title}\n\n${content}\n\n`;
                 })
                 .join('---\n\n');
@@ -949,9 +940,9 @@
 
         window.copyContent = function (button) {
             const contentSection = button.closest('.content-section');
-            const contentDiv = contentSection.querySelector('.markdown-content') || contentSection.querySelector('.parsed-content');
-            if (contentDiv) {
-                const content = contentDiv.textContent;
+            const contentElement = contentSection.querySelector('.markdown-content') || contentSection.querySelector('.parsed-content');
+            if (contentElement) {
+                const content = textOnlyToggle.checked ? contentElement.textContent : contentElement.innerHTML;
                 navigator.clipboard.writeText(content).then(() => {
                     button.textContent = 'Copied!';
                     setTimeout(() => {
