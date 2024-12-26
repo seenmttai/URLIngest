@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <base href="draganddroplinks.co" target="_blank">
+    <base href="urlingest.pages.dev" target="_blank">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -358,6 +358,51 @@
         .link-edit-input {
             display: none;
         }
+        .pattern-input-container {
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .pattern-input-label {
+            display: block;
+            margin-bottom: 10px;
+            color: #2563eb;
+        }
+
+        .pattern-link-input {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #4a90e2;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .pattern-count-input {
+            width: 60px;
+            padding: 10px;
+            border: 1px solid #4a90e2;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .add-pattern-links-button {
+            padding: 10px 20px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .add-pattern-links-button:hover {
+            background: #357abd;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -373,6 +418,13 @@
     <div class="add-link-container">
         <input type="text" id="linkInput" placeholder="Enter URL here..." class="link-input">
         <button id="addLinkButton" class="action-button">Add Link</button>
+    </div>
+    <div class="pattern-input-container">
+        <label for="patternLinkInput" class="pattern-input-label">Add pattern-based link:</label>
+        <input type="text" id="patternLinkInput" placeholder="e.g., https://example.com/page-[number]" class="pattern-link-input">
+        <label for="patternCountInput" class="pattern-input-label">Number of links to generate:</label>
+        <input type="number" id="patternCountInput" min="1" value="10" class="pattern-count-input">
+        <button id="addPatternLinksButton" class="add-pattern-links-button">Add Pattern Links</button>
     </div>
     <div class="button-container">
         <div class="toggle-container">
@@ -444,6 +496,9 @@
         const includeStyles = document.getElementById('includeStyles');
         const linkInput = document.getElementById('linkInput');
         const addLinkButton = document.getElementById('addLinkButton');
+        const patternLinkInput = document.getElementById('patternLinkInput');
+        const patternCountInput = document.getElementById('patternCountInput');
+        const addPatternLinksButton = document.getElementById('addPatternLinksButton');
 
         let visitedUrls = new Set();
         let parsingStatus;
@@ -458,6 +513,49 @@
             '.tiff', '.svg', '.ico', '.psd', '.ai', '.eps', '.ps', '.ttf', '.otf', '.woff',
             '.woff2', '.eot', '.odt', '.ods', '.odp', '.odg', '.odf'
         ];
+
+        function generatePatternLinks(pattern, count) {
+            const links = [];
+            const numberPattern = /\[number\]/;
+            const numberRangePattern = /\[number:(\d+)-(\d+)\]/;
+            const letterPattern = /\[letter\]/;
+            const letterRangePattern = /\[letter:([a-z])-([a-z])\]/;
+
+            if (pattern.match(numberPattern)) {
+                for (let i = 1; i <= count; i++) {
+                    links.push(pattern.replace(numberPattern, i));
+                }
+            } else if (pattern.match(numberRangePattern)) {
+                const match = pattern.match(numberRangePattern);
+                const start = parseInt(match[1]);
+                const end = parseInt(match[2]);
+                for (let i = start; i <= count; i++) {
+                    links.push(pattern.replace(numberRangePattern, i));
+                }
+            } else if (pattern.match(letterPattern)) {
+                for (let i = 0; i < count; i++) {
+                    links.push(pattern.replace(letterPattern, String.fromCharCode(97 + i)));
+                }
+            } else if (pattern.match(letterRangePattern)) {
+                const match = pattern.match(letterRangePattern);
+                const start = match[1].charCodeAt(0);
+                const end = match[2].charCodeAt(0);
+                for (let i = start; i < start + count; i++) {
+                    links.push(pattern.replace(letterRangePattern, String.fromCharCode(i)));
+                }
+            } else {
+                links.push(pattern);
+            }
+
+            return links;
+        }
+
+        addPatternLinksButton.addEventListener('click', () => {
+            const pattern = patternLinkInput.value;
+            const count = parseInt(patternCountInput.value);
+            const patternLinks = generatePatternLinks(pattern, count);
+            patternLinks.forEach(link => addLinkToList(link));
+        });
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, preventDefaults, false);
