@@ -1,0 +1,796 @@
+<html><head><base href="draganddroplinks.co" target="_blank">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f5ff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+    
+        #dropZone {
+            width: 80%;
+            max-width: 600px;
+            min-height: 200px;
+            margin: 20px auto;
+            border: 3px dashed #4a90e2;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+        }
+    
+        #dropZone.dragover {
+            background: #e1edff;
+            border-color: #2563eb;
+            transform: scale(1.02);
+        }
+    
+        #linksList {
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0;
+            list-style: none;
+        }
+    
+        .link-item {
+            background: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            animation: slideIn 0.3s ease-out;
+        }
+    
+        @keyframes slideIn {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    
+        .link-icon {
+            margin-right: 15px;
+            color: #4a90e2;
+        }
+    
+        .link-text {
+            color: #2563eb;
+            text-decoration: none;
+            flex-grow: 1;
+        }
+    
+        .link-text:hover {
+            text-decoration: underline;
+        }
+    
+        .link-actions {
+            display: flex;
+            gap: 10px;
+        }
+    
+        .action-button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+    
+        .copy-button, .copy-content-button {
+            background: #4CAF50;
+            color: white;
+        }
+    
+        .delete-button {
+            background: #f44336;
+            color: white;
+        }
+    
+        .action-button:hover {
+            opacity: 0.9;
+        }
+    
+        h1 {
+            text-align: center;
+            color: #2563eb;
+            margin-bottom: 30px;
+        }
+    
+        #parseButton, #deepParseButton, #copyAllButton, #stopParseButton {
+            display: inline-block;
+            margin: 20px 10px;
+            padding: 10px 20px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+    
+        #parseButton:hover, #deepParseButton:hover, #copyAllButton:hover, #stopParseButton:hover {
+            background: #357abd;
+        }
+    
+        .button-container {
+            text-align: center;
+        }
+    
+        .toggle-container {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+    
+        .toggle-label {
+            margin-left: 10px;
+            color: #2563eb;
+        }
+    
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+    
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+    
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+        }
+    
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+        }
+    
+        .switch input:checked + .slider {
+            background-color: #2563eb;
+        }
+    
+        .switch input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    
+        .slider.round {
+            border-radius: 34px;
+        }
+    
+        .slider.round:before {
+            border-radius: 50%;
+        }
+    
+        #textContent {
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: white;
+            display: none;
+        }
+    
+        .content-section {
+            margin-bottom: 20px;
+            position: relative;
+        }
+    
+        .content-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+    
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    
+        .parsing-status {
+            margin: 20px auto;
+            width: 80%;
+            max-width: 600px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    
+        .progress-item {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+            background: #f5f5f5;
+        }
+    
+        .progress-item.done {
+            background: #e8f5e9;
+        }
+    
+        .parsed-content {
+            font-family: monospace;
+            white-space: pre-wrap;
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+        }
+    
+        .markdown-content {
+            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+    
+        .markdown-content h1 { font-size: 2em; margin: 0.67em 0; }
+        .markdown-content h2 { font-size: 1.5em; margin: 0.75em 0; }
+        .markdown-content h3 { font-size: 1.17em; margin: 0.83em 0; }
+        .markdown-content p { margin: 1em 0; }
+        .markdown-content ul { margin: 1em 0; padding-left: 40px; }
+        .markdown-content li { margin: 0.5em 0; }
+        .markdown-content code { 
+            background: #f5f5f5;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    
+        .filter-settings, .source-code-settings {
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    
+        .settings-container {
+            margin: 20px 0;
+        }
+    
+        .setting-item {
+            margin: 10px 0;
+        }
+    
+        .add-link-container {
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            display: flex;
+            gap: 10px;
+        }
+    
+        .link-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #4a90e2;
+            border-radius: 4px;
+        }
+    
+        .edit-mode .link-text {
+            display: none;
+        }
+    
+        .edit-mode .link-edit-input {
+            display: block;
+            flex-grow: 1;
+            padding: 5px;
+            margin-right: 10px;
+        }
+    
+        .link-edit-input {
+            display: none;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    </head>
+    <body>
+        <h1>Drop Links Here</h1>
+        <div id="dropZone">
+            <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#4a90e2" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+            <p>Drag and drop links here</p>
+        </div>
+        <div class="add-link-container">
+            <input type="text" id="linkInput" placeholder="Enter URL here..." class="link-input">
+            <button id="addLinkButton" class="action-button">Add Link</button>
+        </div>
+        <div class="button-container">
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" id="textOnlyToggle" checked>
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-label">Text Only</span>
+            </div>
+            <button id="parseButton">Parse Links Content</button>
+            <button id="deepParseButton">Deep Parse</button>
+            <button id="copyAllButton" style="display: none;">Copy All Content</button>
+            <button id="stopParseButton" style="display: none;">Stop Parsing</button>
+        </div>
+        <div class="settings-container">
+            <div class="filter-settings">
+                <h3>Text Filter Settings</h3>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="minWordFilter" checked>
+                        Skip sections with fewer than 3 words
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="minLengthFilter" checked>
+                        Skip sections shorter than 30 characters
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="commonWordsFilter" checked>
+                        Skip navigation/common sections (home, menu, etc)
+                    </label>
+                </div>
+            </div>
+            <div class="source-code-settings">
+                <h3>Source Code Settings</h3>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="includeScripts" checked>
+                        Include Script Tags
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="includeStyles" checked>
+                        Include Style Tags
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div id="textContent" contenteditable="true"></div>
+        <ul id="linksList"></ul>
+    
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const linksList = document.getElementById('linksList');
+        const parseButton = document.getElementById('parseButton');
+        const deepParseButton = document.getElementById('deepParseButton');
+        const copyAllButton = document.getElementById('copyAllButton');
+        const stopParseButton = document.getElementById('stopParseButton');
+        const textContent = document.getElementById('textContent');
+        const textOnlyToggle = document.getElementById('textOnlyToggle');
+        const minWordFilter = document.getElementById('minWordFilter');
+        const minLengthFilter = document.getElementById('minLengthFilter');
+        const commonWordsFilter = document.getElementById('commonWordsFilter');
+        const includeScripts = document.getElementById('includeScripts');
+        const includeStyles = document.getElementById('includeStyles');
+        const linkInput = document.getElementById('linkInput');
+        const addLinkButton = document.getElementById('addLinkButton');
+        
+        let visitedUrls = new Set();
+        let parsingStatus;
+        let stopParsing = false;
+    
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+    
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+    
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+    
+        function highlight(e) {
+            dropZone.classList.add('dragover');
+        }
+    
+        function unhighlight(e) {
+            dropZone.classList.remove('dragover');
+        }
+    
+        dropZone.addEventListener('drop', handleDrop, false);
+    
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const text = dt.getData('text');
+            
+            if (isValidUrl(text)) {
+                addLinkToList(text);
+            }
+        }
+    
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+    
+        addLinkButton.addEventListener('click', () => {
+            const url = linkInput.value.trim();
+            if (isValidUrl(url)) {
+                addLinkToList(url);
+                linkInput.value = '';
+            } else {
+                alert('Please enter a valid URL');
+            }
+        });
+    
+        function addLinkToList(url) {
+            const li = document.createElement('li');
+            li.className = 'link-item';
+            
+            const icon = document.createElement('span');
+            icon.className = 'link-icon';
+            icon.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+            `;
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.className = 'link-text';
+            link.textContent = url;
+            link.target = '_blank';
+    
+            const editInput = document.createElement('input');
+            editInput.type = 'text';
+            editInput.className = 'link-edit-input';
+            editInput.value = url;
+    
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'link-actions';
+    
+            const editButton = document.createElement('button');
+            editButton.className = 'action-button edit-button';
+            editButton.textContent = 'Edit';
+            editButton.onclick = () => {
+                li.classList.toggle('edit-mode');
+                if (li.classList.contains('edit-mode')) {
+                    editButton.textContent = 'Save';
+                } else {
+                    if (isValidUrl(editInput.value.trim())) {
+                        url = editInput.value.trim();
+                        link.href = url;
+                        link.textContent = url;
+                        editButton.textContent = 'Edit';
+                    } else {
+                        alert('Please enter a valid URL');
+                        li.classList.add('edit-mode');
+                    }
+                }
+            };
+    
+            const copyButton = document.createElement('button');
+            copyButton.className = 'action-button copy-button';
+            copyButton.textContent = 'Copy';
+            copyButton.onclick = () => {
+                navigator.clipboard.writeText(url).then(() => {
+                    copyButton.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyButton.textContent = 'Copy';
+                    }, 2000);
+                });
+            };
+    
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'action-button delete-button';
+            deleteButton.textContent = 'Delete';
+            deleteButton.onclick = () => {
+                li.style.animation = 'slideIn 0.3s reverse';
+                setTimeout(() => {
+                    li.remove();
+                }, 300);
+            };
+    
+            actionsDiv.appendChild(editButton);
+            actionsDiv.appendChild(copyButton);
+            actionsDiv.appendChild(deleteButton);
+            
+            li.appendChild(icon);
+            li.appendChild(link);
+            li.appendChild(editInput);
+            li.appendChild(actionsDiv);
+            linksList.appendChild(li);
+        }
+    
+        function createParsingStatus() {
+            if (!parsingStatus) {
+                parsingStatus = document.createElement('div');
+                parsingStatus.className = 'parsing-status';
+                textContent.parentNode.insertBefore(parsingStatus, textContent);
+            }
+            return parsingStatus;
+        }
+    
+        function normalizeUrl(url) {
+            try {
+                const parsedUrl = new URL(url);
+                return parsedUrl.origin + parsedUrl.pathname;
+            } catch {
+                return url;
+            }
+        }
+    
+        function extractLinks(html, baseUrl) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const links = [...doc.querySelectorAll('a[href]')]
+                .map(a => {
+                    try {
+                        return new URL(a.href, baseUrl).href;
+                    } catch {
+                        return null;
+                    }
+                })
+                .filter(url => url && url.startsWith(baseUrl));
+            return [...new Set(links)];
+        }
+    
+        function formatAsMarkdown(text) {
+            let lines = text.split('\n');
+            let formatted = '';
+            let inParagraph = false;
+    
+            for (let line of lines) {
+                line = line.trim();
+                
+                if (line === '') {
+                    if (inParagraph) {
+                        formatted += '\n\n';
+                        inParagraph = false;
+                    }
+                } else {
+                    if (!inParagraph) {
+                        inParagraph = true;
+                    }
+                    formatted += line + ' ';
+                }
+            }
+    
+            return formatted;
+        }
+    
+        async function handleContent(url, html, isTextOnly) {
+            if (isTextOnly) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                doc.querySelectorAll('script, style, nav, footer, header, .navigation, .menu, .sidebar').forEach(el => el.remove());
+                let text = doc.body.textContent;
+                let paragraphs = text.split(/\n+/)
+                    .map(p => p.trim())
+                    .filter(p => {
+                        if (!minWordFilter.checked && !minLengthFilter.checked && !commonWordsFilter.checked) {
+                            return p.length > 0;
+                        }
+                        
+                        const wordCount = p.split(/\s+/).length;
+                        const checks = [
+                            !minWordFilter.checked || wordCount > 3,
+                            !minLengthFilter.checked || p.length > 30,
+                            !commonWordsFilter.checked || !p.match(/^(home|menu|search|login|sign in|copyright)/i)
+                        ];
+                        return checks.every(c => c);
+                    });
+                
+                const formatted = paragraphs.join('\n\n');
+                return marked.parse(formatted);
+            } else {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                if (!includeScripts.checked) {
+                    doc.querySelectorAll('script').forEach(el => el.remove());
+                }
+                if (!includeStyles.checked) {
+                    doc.querySelectorAll('style').forEach(el => el.remove());
+                }
+    
+                return doc.documentElement.outerHTML
+                    .replace(/</g, '<')
+                    .replace(/>/g, '>');
+            }
+        }
+    
+        deepParseButton.addEventListener('click', async () => {
+            const links = document.querySelectorAll('.link-text');
+            if (links.length === 0) {
+                alert('Please add some links first!');
+                return;
+            }
+    
+            stopParsing = false;
+            stopParseButton.style.display = 'inline-block';
+            visitedUrls.clear();
+            textContent.style.display = 'block';
+            copyAllButton.style.display = 'inline-block';
+            const status = createParsingStatus();
+            const isTextOnly = textOnlyToggle.checked;
+            
+            const queue = [...links].map(link => link.href);
+            const allContent = [];
+    
+            while (queue.length > 0 && !stopParsing) {
+                const url = queue.shift();
+                const normalizedUrl = normalizeUrl(url);
+                
+                if (visitedUrls.has(normalizedUrl)) continue;
+                visitedUrls.add(normalizedUrl);
+    
+                status.innerHTML = `<div class="progress-item">Processing: ${url}</div>` + status.innerHTML;
+    
+                try {
+                    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+                    const response = await fetch(proxyUrl);
+                    const html = await response.text();
+    
+                    const content = await handleContent(url, html, isTextOnly);
+                    
+                    const contentSection = `
+                        <div class="content-section">
+                            <h3>${url}</h3>
+                            <div class="content-actions">
+                                <button class="action-button copy-content-button" onclick="copyContent(this)">Copy Content</button>
+                            </div>
+                            <div class="${isTextOnly ? 'markdown-content' : 'parsed-content'}">${content}</div>
+                        </div>`;
+                    allContent.push(contentSection);
+    
+                    const newLinks = extractLinks(html, new URL(url).origin);
+                    queue.push(...newLinks.filter(link => !visitedUrls.has(normalizeUrl(link))));
+    
+                    status.firstChild.classList.add('done');
+                } catch (error) {
+                    allContent.push(`<div class="content-section"><h3>${url}</h3><p>Error fetching content: ${error.message}</p></div>`);
+                    status.firstChild.style.backgroundColor = '#ffebee';
+                }
+    
+                textContent.innerHTML = allContent.join('<hr>');
+            }
+    
+            stopParseButton.style.display = 'none';
+            status.innerHTML = '<div class="progress-item done">Parsing completed!</div>' + status.innerHTML;
+        });
+    
+        stopParseButton.addEventListener('click', () => {
+            stopParsing = true;
+            stopParseButton.style.display = 'none';
+        });
+    
+        parseButton.addEventListener('click', async () => {
+            const links = document.querySelectorAll('.link-text');
+            if (links.length === 0) {
+                alert('Please add some links first!');
+                return;
+            }
+    
+            textContent.style.display = 'block';
+            copyAllButton.style.display = 'inline-block';
+            textContent.innerHTML = 'Parsing content...';
+            textContent.classList.add('loading');
+    
+            const isTextOnly = textOnlyToggle.checked;
+            const allContent = [];
+    
+            for (const link of links) {
+                try {
+                    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(link.href);
+                    const response = await fetch(proxyUrl);
+                    const html = await response.text();
+    
+                    const content = await handleContent(link.href, html, isTextOnly);
+                    
+                    const contentSection = `
+                        <div class="content-section">
+                            <h3>${link.href}</h3>
+                            <div class="content-actions">
+                                <button class="action-button copy-content-button" onclick="copyContent(this)">Copy Content</button>
+                            </div>
+                            <div class="${isTextOnly ? 'markdown-content' : 'parsed-content'}">${content}</div>
+                        </div>`;
+                    allContent.push(contentSection);
+                } catch (error) {
+                    allContent.push(`<div class="content-section"><h3>${link.href}</h3><p>Error fetching content: ${error.message}</p></div>`);
+                }
+            }
+    
+            textContent.classList.remove('loading');
+            textContent.innerHTML = allContent.join('<hr>');
+        });
+    
+        copyAllButton.addEventListener('click', () => {
+            const allContent = Array.from(textContent.getElementsByClassName('markdown-content, parsed-content'))
+                .filter(element => element)
+                .map(section => {
+                    const title = section.closest('.content-section')?.querySelector('h3')?.textContent || '';
+                    const content = section.textContent || '';
+                    return `${title}\n\n${content}\n\n`;
+                })
+                .join('---\n\n');
+    
+            if (allContent) {
+                navigator.clipboard.writeText(allContent).then(() => {
+                    copyAllButton.textContent = 'All Content Copied!';
+                    setTimeout(() => {
+                        copyAllButton.textContent = 'Copy All Content';
+                    }, 2000);
+                });
+            }
+        });
+    
+        window.copyContent = function(button) {
+            const contentSection = button.closest('.content-section');
+            const contentDiv = contentSection.querySelector('.markdown-content') || contentSection.querySelector('.parsed-content');
+            if (contentDiv) {
+                const content = contentDiv.textContent;
+                navigator.clipboard.writeText(content).then(() => {
+                    button.textContent = 'Copied!';
+                    setTimeout(() => {
+                        button.textContent = 'Copy Content';
+                    }, 2000);
+                });
+            }
+        };
+    
+        textOnlyToggle.addEventListener('change', function() {
+            const filterSettings = document.querySelector('.filter-settings');
+            const sourceCodeSettings = document.querySelector('.source-code-settings');
+            filterSettings.style.display = this.checked ? 'block' : 'none';
+            sourceCodeSettings.style.display = this.checked ? 'none' : 'block';
+        });
+    
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterSettings = document.querySelector('.filter-settings');
+            const sourceCodeSettings = document.querySelector('.source-code-settings');
+            filterSettings.style.display = textOnlyToggle.checked ? 'block' : 'none';
+            sourceCodeSettings.style.display = textOnlyToggle.checked ? 'none' : 'block';
+        });
+    </script>
+    </body></html>
