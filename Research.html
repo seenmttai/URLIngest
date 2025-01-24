@@ -3,199 +3,25 @@
 <head>
     <base href="urlingest.pages.dev" target="_blank">
     <title>ArXiv Research Summarizer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="script.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f0f5ff;
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-        }
-
-        h1 {
-            text-align: center;
-            color: #2563eb;
-            margin-bottom: 30px;
-        }
-
-        #topicSection, #resultsSection, #paperSelectionSection, #modeSection {
-            width: 80%;
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .section-title {
-            color: #2563eb;
-            margin-top: 0;
-        }
-
-        #topicSelect, #styleSelect {
-            width: calc(100% - 22px);
-            padding: 10px;
-            margin-top: 10px;
-            border: 1px solid #4a90e2;
-            border-radius: 4px;
-            background-color: white;
-            appearance: none;
-        }
-
-        .select-wrapper {
-            position: relative;
-            display: inline-block;
-            width: 100%;
-        }
-
-        .select-wrapper::after {
-            content: '▼';
-            position: absolute;
-            top: 50%;
-            right: 10px;
-            transform: translateY(-50%);
-            pointer-events: none;
-        }
-
-        #fetchPapersButton, #summarizeButton {
-            display: block;
-            width: 100%;
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #4a90e2;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        #fetchPapersButton:hover, #summarizeButton:hover {
-            background: #357abd;
-        }
-
-        #summarizeButton {
-            display: none;
-        }
-
-        #resultsSection {
-            display: none;
-        }
-
-        .paper-button {
-            display: block;
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 10px;
-            background: #e0e0e0;
-            color: #333;
-            border: none;
-            border-radius: 5px;
-            text-align: left;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .paper-button.selected {
-            background: #4a90e2;
-            color: white;
-        }
-
-        .paper-button:hover {
-            background: #b0c4de;
-        }
-
-        .summary-item {
-            margin-bottom: 20px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 20px;
-        }
-
-        .summary-title {
-            font-weight: bold;
-        }
-
-        .summary-content {
-            margin-top: 10px;
-            line-height: 1.6;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        }
-        .filter-settings{
-            width: 80%;
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .settings-container {
-            margin: 20px 0;
-        }
-
-        .setting-item {
-            margin: 10px 0;
-        }
-        .loading {
-            text-align: center;
-            color: #777;
-        }
-        .token-count {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 0.9em;
-            color: #777;
-        }
-        .mode-button {
-            padding: 10px 20px;
+        #modeButtons button{
             margin: 5px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
         }
-
-        .mode-button:hover {
-            background-color: #e2e6ea;
-        }
-
-        .mode-button.active {
-            background-color: #4a90e2;
-            color: white;
-            border-color: #4a90e2;
-        }
-        .mode-button.active:hover {
-            background-color: #357abd;
-        }
-        #selectAllButton{
-            display: none;
-            width: 96%;
-            margin-top: 20px;
-            margin-left: 2%;
-            padding: 10px 20px;
-            background: #4a90e2;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-        #selectAllButton:hover{
-            background: #357abd;
+        .mode-button.active, .mode-button.active:hover {
+            color: white !important;
         }
 
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <h1>ArXiv Research Summarizer</h1>
 
     <div id="topicSection">
         <h2 class="section-title">Select a Topic:</h2>
-        <select id="topicSelect">
+        <select id="topicSelect" class="pattern-link-input">
             <option value="cs.AI">Artificial Intelligence</option>
             <option value="cs.LG">Machine Learning</option>
             <option value="cs.CV">Computer Vision and Pattern Recognition</option>
@@ -353,7 +179,7 @@
             <option value="math.ST">Statistics Theory</option>
             <option value="math.SG">Symplectic Geometry</option>
         </select>
-        <button id="fetchPapersButton">Fetch Papers</button>
+        <button id="fetchPapersButton" class="action-button">Fetch Papers</button>
     </div>
     <div class="settings-container">
         <div class="filter-settings">
@@ -392,7 +218,7 @@
     <div id="paperSelectionSection" style="display: none;">
         <h2 class="section-title">Select Papers to Summarize:</h2>
         <div class="select-wrapper">
-            <select id="styleSelect">
+            <select id="styleSelect" class="pattern-link-input">
                 <option value="5">5 year old</option>
                 <option value="10">Preschooler</option>
                 <option value="14">Highschooler</option>
@@ -403,14 +229,14 @@
             </select>
         </div>
         <div id="paperList"></div>
-        <button id="selectAllButton">Select All</button>
-        <button id="summarizeButton">Summarize Selected Papers</button>
+        <button id="selectAllButton" class="action-button">Select All</button>
+        <button id="summarizeButton" class="action-button">Summarize Selected Papers</button>
     </div>
 
     <div id="resultsSection">
         <h2 class="section-title">Summaries:</h2>
         <div id="summaries" class="loading"></div>
-        <div class="token-count"></div>  
+        <div class="token-count"></div>
     </div>
 
     <script>
@@ -421,7 +247,7 @@
         const summarizeButton = document.getElementById('summarizeButton');
         const resultsSection = document.getElementById('resultsSection');
         const summariesContainer = document.getElementById('summaries');
-        const tokenCountContainer = resultsSection.querySelector('.token-count'); 
+        const tokenCountContainer = resultsSection.querySelector('.token-count');
         const minWordFilter = document.getElementById('minWordFilter');
         const minLengthFilter = document.getElementById('minLengthFilter');
         const commonWordsFilter = document.getElementById('commonWordsFilter');
@@ -431,33 +257,6 @@
         let selectedPapers = [];
         let activeMode = 'summary';
 
-        const corsProxies = [
-            'https://api.allorigins.win/raw?url=',
-            'https://corsproxy.io/?',
-            'https://proxy.cors.sh/',
-            'https://gobetween.oklabs.org/',
-            'https://test.cors.workers.dev/?'
-        ];
-
-        let currentProxyIndex = 0;
-
-        async function fetchWithCorsFallback(url) {
-            while (currentProxyIndex < corsProxies.length) {
-                try {
-                    const proxyUrl = corsProxies[currentProxyIndex] + encodeURIComponent(url);
-                    const response = await fetch(proxyUrl);
-                    if (response.ok) {
-                        return await response.text();
-                    } else {
-                        throw new Error(`Failed to fetch with proxy ${corsProxies[currentProxyIndex]}: ${response.status}`);
-                    }
-                } catch (error) {
-                    console.error(error);
-                    currentProxyIndex++;
-                }
-            }
-            throw new Error('Failed to fetch with all available CORS proxies');
-        }
 
         fetchPapersButton.addEventListener('click', async () => {
             const selectedTopic = topicSelect.value;
@@ -481,7 +280,7 @@
             const arxivUrl = `https://arxiv.org/list/${topic}/new`;
 
             try {
-                const text = await fetchWithCorsFallback(arxivUrl);
+                const text = await fetchWithCORSBypass(arxivUrl);
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(text, 'text/html');
 
@@ -510,10 +309,10 @@
             }
         }
 
-         function displayPaperHeadings(headings) {
+        function displayPaperHeadings(headings) {
             paperList.innerHTML = '';
             headings.forEach(heading => {
-                 const button = document.createElement('button');
+                const button = document.createElement('button');
                 button.className = 'paper-button';
                 if (!heading.htmlLink) {
                     button.disabled = true;
@@ -523,7 +322,7 @@
                     button.title = heading.title;
                     button.textContent = heading.title;
                     button.addEventListener('click', () => {
-                         const index = selectedPapers.findIndex(paper => paper.htmlLink === heading.htmlLink)
+                        const index = selectedPapers.findIndex(paper => paper.htmlLink === heading.htmlLink)
                         if (index > -1) {
                             selectedPapers.splice(index, 1);
                             button.classList.remove('selected');
@@ -534,19 +333,20 @@
                         summarizeButton.style.display = selectedPapers.length > 0 ? 'block' : 'none';
                     });
                 }
-                 paperList.appendChild(button);
+                paperList.appendChild(button);
             });
         }
 
 
         summarizeButton.addEventListener('click', async () => {
             summariesContainer.innerHTML = '<div class="loading">Loading summaries...</div>';
-            tokenCountContainer.textContent = ''; 
+            tokenCountContainer.textContent = '';
             resultsSection.style.display = 'block';
+            summariesContainer.style.display = 'block';
 
             try {
                 let summary = '';
-                    summary = await getLLMSummary(selectedPapers, getPrompt(activeMode));
+                summary = await getLLMSummary(selectedPapers, getPrompt(activeMode));
                 displaySummaries([{ summary }]);
             } catch (error) {
                 console.error(error);
@@ -554,11 +354,11 @@
             }
         });
 
-         async function getLLMSummary(papers, prompt) {
-             let combinedContent = await getCombinedPaperContent(papers);
-             const tokenCount = Math.ceil(combinedContent.replace(/\s/g, '').length / 4); // Calculate token count here
+        async function getLLMSummary(papers, prompt) {
+            let combinedContent = await getCombinedPaperContent(papers);
+            const tokenCount = Math.ceil(combinedContent.replace(/\s/g, '').length / 4);
 
-             const workerUrl = 'https://aid.bhansalimanan55.workers.dev/';
+            const workerUrl = 'https://aid.bhansalimanan55.workers.dev/';
             const requestBody = {
                 promptType: 'arxiv',
                 mode: activeMode,
@@ -566,29 +366,29 @@
                 text: combinedContent
             };
 
-             try {
-                 const response = await fetch(workerUrl, {
+            try {
+                const response = await fetch(workerUrl, {
                     method: 'POST',
                     headers: {
-                         'Content-Type': 'application/json',
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(requestBody),
                 });
 
                 if (!response.ok) {
-                     const errorData = await response.json();
-                     throw new Error(`Worker API Error: ${response.status} - ${errorData.error}`);
+                    const errorData = await response.json();
+                    throw new Error(`Worker API Error: ${response.status} - ${errorData.error}`);
                 }
 
-                 const data = await response.json();
-                 if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts.length > 0) {
-                    tokenCountContainer.textContent = `Tokens sent to API: ${tokenCount}`; // Update token count display
+                const data = await response.json();
+                if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts.length > 0) {
+                    tokenCountContainer.textContent = `Tokens sent to API: ${tokenCount}`;
                     return data.candidates[0].content.parts[0].text;
-                 } else {
+                } else {
                     throw new Error('Unexpected response format from Worker API.');
                 }
             } catch (error) {
-                 console.error(error);
+                console.error(error);
                 return `Failed to get summary from the LLM. Error: ${error}`;
             }
         }
@@ -611,7 +411,7 @@
         async function fetchPaperContent(url) {
             currentProxyIndex = 0;
             try {
-                const text = await fetchWithCorsFallback(url);
+                const text = await fetchWithCORSBypass(url);
                 return text;
             } catch (error) {
                 console.error(error);
@@ -640,7 +440,15 @@
         }
 
         function displaySummaries(summaries) {
+            console.log('Raw API Response:', summaries);
+            if (typeof summaries[0]?.summary === 'undefined') {
+              console.error('Invalid summary structure:', summaries);
+            }
             summariesContainer.innerHTML = '';
+            if (!summaries || summaries.length === 0) {
+                summariesContainer.innerHTML = '<div>No summaries to display.</div>';
+                return;
+            }
             summaries.forEach(item => {
                 const formattedSummary = formatSummary(item.summary);
                 const summaryElement = `
@@ -654,10 +462,10 @@
 
 
         function formatSummary(text) {
-             return marked.parse(text);
+            return marked.parse(text);
         }
 
-       function getPrompt(mode) {
+        function getPrompt(mode) {
             const style = styleSelect.value;
             const styleDescriptions = {
                 '5': "Explain Like I'm 5 years old using simple analogies",
@@ -688,19 +496,19 @@
         });
 
         selectAllButton.addEventListener('click', () => {
-             const allPaperButtons = paperList.querySelectorAll('.paper-button:not([disabled])');
+            const allPaperButtons = paperList.querySelectorAll('.paper-button:not([disabled])');
             selectedPapers = [];
             allPaperButtons.forEach(button => {
                 button.classList.add('selected');
                 const buttonTitle = button.title;
-                 const heading = Array.from(paperList.children).find(item => item.title === buttonTitle);
-                 if (heading) {
-                     const absLinkElement = heading.querySelector('a[href^="/abs/"]');
-                     const absLink = absLinkElement ? `https://arxiv.org/abs/${absLinkElement.href.split('/').pop()}` : '';
+                const heading = Array.from(paperList.children).find(item => item.title === buttonTitle);
+                if (heading) {
+                    const absLinkElement = heading.querySelector('a[href^="/abs/"]');
+                    const absLink = absLinkElement ? `https://arxiv.org/abs/${absLinkElement.href.split('/').pop()}` : '';
 
-                     const htmlLinkElement = heading.querySelector('a[href^="/pdf/"]');
-                     const htmlLink = htmlLinkElement ? `https://arxiv.org/html/${htmlLinkElement.href.split('/').pop().replace("pdf", "html")}` : '';
-                      selectedPapers.push({title: heading.title, absLink, htmlLink});
+                    const htmlLinkElement = heading.querySelector('a[href^="/pdf/"]');
+                    const htmlLink = htmlLinkElement ? `https://arxiv.org/html/${htmlLinkElement.href.split('/').pop().replace("pdf", "html")}` : '';
+                    selectedPapers.push({ title: heading.title, absLink, htmlLink });
                 }
             });
 
