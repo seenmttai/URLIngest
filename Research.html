@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base href="urlingest.pages.dev" target="_blank">
+    <title>ArXiv Research Summarizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f5ff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2563eb;
+            margin-bottom: 30px;
+        }
+
+        #topicSection, #resultsSection, #paperSelectionSection, #modeSection {
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            color: #2563eb;
+            margin-top: 0;
+        }
+
+        #topicSelect, #styleSelect {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #4a90e2;
+            border-radius: 4px;
+            background-color: white;
+            appearance: none;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        #fetchPapersButton, #summarizeButton {
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        #fetchPapersButton:hover, #summarizeButton:hover {
+            background: #357abd;
+        }
+
+        #summarizeButton {
+            display: none;
+        }
+
+        #resultsSection {
+            display: none;
+        }
+
+        .paper-button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #e0e0e0;
+            color: #333;
+            border: none;
+            border-radius: 5px;
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .paper-button.selected {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .paper-button:hover {
+            background: #b0c4de;
+        }
+
+        .summary-item {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 20px;
+        }
+
+        .summary-title {
+            font-weight: bold;
+        }
+
+        .summary-content {
+            margin-top: 10px;
+            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .filter-settings{
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .settings-container {
+            margin: 20px 0;
+        }
+
+        .setting-item {
+            margin: 10px 0;
+        }
+        .loading {
+            text-align: center;
+            color: #777;
+        }
+        .token-count {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #777;
+        }
+        .mode-button {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .mode-button:hover {
+            background-color: #e2e6ea;
+        }
+
+        .mode-button.active {
+            background-color: #4a90e2;
+            color: white;
+            border-color: #4a90e2;
+        }
+        .mode-button.active:hover {
+            background-color: #357abd;
+        }
+        #selectAllButton{
+            display: none;
+            width: 96%;
+            margin-top: 20px;
+            margin-left: 2%;
+            padding: 10px 20px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        #selectAllButton:hover{
+            background: #357abd;
+        }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <h1>ArXiv Research Summarizer</h1>
+
+    <div id="topicSection">
+        <h2 class="section-title">Select a Topic:</h2>
+        <select id="topicSelect">
+            <option value="cs.AI">Artificial Intelligence</option>
+            <option value="cs.LG">Machine Learning</option>
+            <option value="cs.CV">Computer Vision and Pattern Recognition</option>
+            <option value="cs.RO">Robotics</option>
+            <option value="quant-ph">Quantum Physics</option>
+            <option value="cs.NE">Neural and Evolutionary Computing</option>
+            <option value="cs.CL">Computation and Language</option>
+            <option value="math.OC">Optimization and Control</option>
+            <option value="stat.ML">Machine Learning (Statistics)</option>
+            <option value="cs.MA">Multiagent Systems</option>
+            <option value="cs.HC">Human-Computer Interaction</option>
+            <option value="cs.SI">Social and Information Networks</option>
+            <option value="eess.SP">Signal Processing</option>
+            <option value="eess.IV">Image and Video Processing</option>
+            <option value="gr-qc">General Relativity and Quantum Cosmology</option>
+            <option value="astro-ph.CO">Cosmology and Nongalactic Astrophysics</option>
+            <option value="hep-th">High Energy Physics - Theory</option>
+            <option value="hep-ph">High Energy Physics - Phenomenology</option>
+            <option value="nlin.CD">Chaotic Dynamics</option>
+            <option value="cs.CC">Computational Complexity</option>
+            <option value="cs.DS">Data Structures and Algorithms</option>
+            <option value="math.PR">Probability</option>
+            <option value="econ.EM">Econometrics</option>
+            <option value="q-fin.PM">Portfolio Management</option>
+            <option value="stat.AP">Applications</option>
+            <option value="cond-mat.mtrl-sci">Materials Science</option>
+            <option value="q-bio.PE">Populations and Evolution</option>
+            <option value="cs.CE">Computational Engineering, Finance, and Science</option>
+            <option value="cs.CG">Computational Geometry</option>
+            <option value="cs.GT">Computer Science and Game Theory</option>
+            <option value="cs.CY">Computers and Society</option>
+            <option value="cs.CR">Cryptography and Security</option>
+            <option value="cs.DB">Databases</option>
+            <option value="cs.DL">Digital Libraries</option>
+            <option value="cs.DM">Discrete Mathematics</option>
+            <option value="cs.DC">Distributed, Parallel, and Cluster Computing</option>
+            <option value="cs.ET">Emerging Technologies</option>
+            <option value="cs.FL">Formal Languages and Automata Theory</option>
+            <option value="cs.GL">General Literature</option>
+            <option value="cs.GR">Graphics</option>
+            <option value="cs.AR">Hardware Architecture</option>
+            <option value="cs.IR">Information Retrieval</option>
+            <option value="cs.IT">Information Theory</option>
+            <option value="cs.LO">Logic in Computer Science</option>
+            <option value="cs.MS">Mathematical Software</option>
+            <option value="cs.MM">Multimedia</option>
+            <option value="cs.NI">Networking and Internet Architecture</option>
+            <option value="cs.NA">Numerical Analysis</option>
+            <option value="cs.OS">Operating Systems</option>
+            <option value="cs.OH">Other Computer Science</option>
+            <option value="cs.PF">Performance</option>
+            <option value="cs.PL">Programming Languages</option>
+            <option value="cs.SE">Software Engineering</option>
+            <option value="cs.SD">Sound</option>
+            <option value="cs.SC">Symbolic Computation</option>
+            <option value="cs.SY">Systems and Control</option>
+            <option value="q-bio.BM">Biomolecules</option>
+            <option value="q-bio.CB">Cell Behavior</option>
+            <option value="q-bio.GN">Genomics</option>
+            <option value="q-bio.MN">Molecular Networks</option>
+            <option value="q-bio.NC">Neurons and Cognition</option>
+            <option value="q-bio.OT">Other Quantitative Biology</option>
+            <option value="q-bio.QM">Quantitative Methods</option>
+            <option value="q-bio.SC">Subcellular Processes</option>
+            <option value="q-bio.TO">Tissues and Organs</option>
+            <option value="q-fin.CP">Computational Finance</option>
+            <option value="q-fin.EC">Economics</option>
+            <option value="q-fin.GN">General Finance</option>
+            <option value="q-fin.MF">Mathematical Finance</option>
+            <option value="q-fin.PR">Pricing of Securities</option>
+            <option value="q-fin.RM">Risk Management</option>
+            <option value="q-fin.ST">Statistical Finance</option>
+            <option value="q-fin.TR">Trading and Market Microstructure</option>
+            <option value="stat.CO">Computation</option>
+            <option value="stat.ME">Methodology</option>
+            <option value="stat.OT">Other Statistics</option>
+            <option value="stat.TH">Statistics Theory</option>
+            <option value="eess.AS">Audio and Speech Processing</option>
+            <option value="eess.SY">Systems and Control</option>
+            <option value="econ.GN">General Economics</option>
+            <option value="econ.TH">Theoretical Economics</option>
+            <option value="astro-ph.GA">Astrophysics of Galaxies</option>
+            <option value="astro-ph.EP">Earth and Planetary Astrophysics</option>
+            <option value="astro-ph.HE">High Energy Astrophysical Phenomena</option>
+            <option value="astro-ph.IM">Instrumentation and Methods for Astrophysics</option>
+            <option value="astro-ph.SR">Solar and Stellar Astrophysics</option>
+            <option value="cond-mat.dis-nn">Disordered Systems and Neural Networks</option>
+            <option value="cond-mat.mes-hall">Mesoscale and Nanoscale Physics</option>
+            <option value="cond-mat.other">Other Condensed Matter</option>
+            <option value="cond-mat.quant-gas">Quantum Gases</option>
+            <option value="cond-mat.soft">Soft Condensed Matter</option>
+            <option value="cond-mat.stat-mech">Statistical Mechanics</option>
+            <option value="cond-mat.str-el">Strongly Correlated Electrons</option>
+            <option value="cond-mat.supr-con">Superconductivity</option>
+            <option value="hep-ex">High Energy Physics - Experiment</option>
+            <option value="hep-lat">High Energy Physics - Lattice</option>
+            <option value="math-ph">Mathematical Physics</option>
+            <option value="nlin.AO">Adaptation and Self-Organizing Systems</option>
+            <option value="nlin.CG">Cellular Automata and Lattice Gases</option>
+            <option value="nlin.SI">Exactly Solvable and Integrable Systems</option>
+            <option value="nlin.PS">Pattern Formation and Solitons</option>
+            <option value="nucl-ex">Nuclear Experiment</option>
+            <option value="nucl-th">Nuclear Theory</option>
+            <option value="physics.acc-ph">Accelerator Physics</option>
+            <option value="physics.app-ph">Applied Physics</option>
+            <option value="physics.ao-ph">Atmospheric and Oceanic Physics</option>
+            <option value="physics.atm-clus">Atomic and Molecular Clusters</option>
+            <option value="physics.atom-ph">Atomic Physics</option>
+            <option value="physics.bio-ph">Biological Physics</option>
+            <option value="physics.chem-ph">Chemical Physics</option>
+            <option value="physics.class-ph">Classical Physics</option>
+            <option value="physics.comp-ph">Computational Physics</option>
+            <option value="physics.data-an">Data Analysis, Statistics and Probability</option>
+            <option value="physics.flu-dyn">Fluid Dynamics</option>
+            <option value="physics.gen-ph">General Physics</option>
+            <option value="physics.geo-ph">Geophysics</option>
+            <option value="physics.hist-ph">History and Philosophy of Physics</option>
+            <option value="physics.ins-det">Instrumentation and Detectors</option>
+            <option value="physics.med-ph">Medical Physics</option>
+            <option value="physics.optics">Optics</option>
+            <option value="physics.soc-ph">Physics and Society</option>
+            <option value="physics.ed-ph">Physics Education</option>
+            <option value="physics.plasm-ph">Plasma Physics</option>
+            <option value="physics.pop-ph">Popular Physics</option>
+            <option value="physics.space-ph">Space Physics</option>
+            <option value="math.AG">Algebraic Geometry</option>
+            <option value="math.AT">Algebraic Topology</option>
+            <option value="math.AP">Analysis of PDEs</option>
+            <option value="math.CT">Category Theory</option>
+            <option value="math.CA">Classical Analysis and ODEs</option>
+            <option value="math.CO">Combinatorics</option>
+            <option value="math.AC">Commutative Algebra</option>
+            <option value="math.CV">Complex Variables</option>
+            <option value="math.DG">Differential Geometry</option>
+            <option value="math.DS">Dynamical Systems</option>
+            <option value="math.FA">Functional Analysis</option>
+            <option value="math.GM">General Mathematics</option>
+            <option value="math.GN">General Topology</option>
+            <option value="math.GT">Geometric Topology</option>
+            <option value="math.GR">Group Theory</option>
+            <option value="math.HO">History and Overview</option>
+            <option value="math.IT">Information Theory</option>
+            <option value="math.KT">K-Theory and Homology</option>
+            <option value="math.LO">Logic</option>
+            <option value="math.MP">Mathematical Physics</option>
+            <option value="math.MG">Metric Geometry</option>
+            <option value="math.NT">Number Theory</option>
+            <option value="math.NA">Numerical Analysis</option>
+            <option value="math.OA">Operator Algebras</option>
+            <option value="math.PR">Probability</option>
+            <option value="math.QA">Quantum Algebra</option>
+            <option value="math.RT">Representation Theory</option>
+            <option value="math.RA">Rings and Algebras</option>
+            <option value="math.SP">Spectral Theory</option>
+            <option value="math.ST">Statistics Theory</option>
+            <option value="math.SG">Symplectic Geometry</option>
+        </select>
+        <button id="fetchPapersButton">Fetch Papers</button>
+    </div>
+    <div class="settings-container">
+        <div class="filter-settings">
+            <h3>Text Filter Settings</h3>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="minWordFilter" checked>
+                    Skip sections with fewer than 3 words
+                </label>
+            </div>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="minLengthFilter" checked>
+                    Skip sections shorter than 30 characters
+                </label>
+            </div>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="commonWordsFilter" checked>
+                    Skip navigation/common sections (home, menu, etc)
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div id="modeSection">
+        <h2 class="section-title">Select Mode:</h2>
+        <div id="modeButtons">
+            <button class="mode-button active" data-mode="summary">Summary</button>
+            <button class="mode-button" data-mode="interesting">Interesting Papers</button>
+            <button class="mode-button" data-mode="keyInsights">Key Insights</button>
+            <button class="mode-button" data-mode="literatureReview">Lit. Review</button>
+        </div>
+    </div>
+
+    <div id="paperSelectionSection" style="display: none;">
+        <h2 class="section-title">Select Papers to Summarize:</h2>
+        <div class="select-wrapper">
+            <select id="styleSelect">
+                <option value="5">5 year old</option>
+                <option value="10">Preschooler</option>
+                <option value="14">Highschooler</option>
+                <option value="20">Average Layman</option>
+                <option value="25">Slightly Knowledgeable</option>
+                <option value="30">Experienced Person</option>
+                <option value="40">Expert</option>
+            </select>
+        </div>
+        <div id="paperList"></div>
+        <button id="selectAllButton">Select All</button>
+        <button id="summarizeButton">Summarize Selected Papers</button>
+    </div>
+
+    <div id="resultsSection">
+        <h2 class="section-title">Summaries:</h2>
+        <div id="summaries" class="loading"></div>
+        <div class="token-count"></div>  
+    </div>
+
+    <script>
+        const topicSelect = document.getElementById('topicSelect');
+        const fetchPapersButton = document.getElementById('fetchPapersButton');
+        const paperSelectionSection = document.getElementById('paperSelectionSection');
+        const paperList = document.getElementById('paperList');
+        const summarizeButton = document.getElementById('summarizeButton');
+        const resultsSection = document.getElementById('resultsSection');
+        const summariesContainer = document.getElementById('summaries');
+        const tokenCountContainer = resultsSection.querySelector('.token-count'); 
+        const minWordFilter = document.getElementById('minWordFilter');
+        const minLengthFilter = document.getElementById('minLengthFilter');
+        const commonWordsFilter = document.getElementById('commonWordsFilter');
+        const styleSelect = document.getElementById('styleSelect');
+        const modeButtons = document.getElementById('modeButtons').querySelectorAll('.mode-button');
+        const selectAllButton = document.getElementById('selectAllButton');
+        let selectedPapers = [];
+        let activeMode = 'summary';
+
+        const corsProxies = [
+            'https://api.allorigins.win/raw?url=',
+            'https://corsproxy.io/?',
+            'https://proxy.cors.sh/',
+            'https://gobetween.oklabs.org/',
+            'https://test.cors.workers.dev/?'
+        ];
+
+        let currentProxyIndex = 0;
+
+        async function fetchWithCorsFallback(url) {
+            while (currentProxyIndex < corsProxies.length) {
+                try {
+                    const proxyUrl = corsProxies[currentProxyIndex] + encodeURIComponent(url);
+                    const response = await fetch(proxyUrl);
+                    if (response.ok) {
+                        return await response.text();
+                    } else {
+                        throw new Error(`Failed to fetch with proxy ${corsProxies[currentProxyIndex]}: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error(error);
+                    currentProxyIndex++;
+                }
+            }
+            throw new Error('Failed to fetch with all available CORS proxies');
+        }
+
+        fetchPapersButton.addEventListener('click', async () => {
+            const selectedTopic = topicSelect.value;
+            paperList.innerHTML = '<div class="loading">Fetching papers...</div>';
+            paperSelectionSection.style.display = 'block';
+            summarizeButton.style.display = 'none';
+            resultsSection.style.display = 'none';
+            selectAllButton.style.display = 'block';
+            selectedPapers = [];
+
+            try {
+                const paperHeadings = await getPaperHeadings(selectedTopic);
+                displayPaperHeadings(paperHeadings);
+            } catch (error) {
+                paperList.innerHTML = '<div>Error fetching papers.</div>';
+            }
+        });
+
+        async function getPaperHeadings(topic) {
+            currentProxyIndex = 0;
+            const arxivUrl = `https://arxiv.org/list/${topic}/new`;
+
+            try {
+                const text = await fetchWithCorsFallback(arxivUrl);
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+
+                const headings = [];
+                const dts = doc.querySelectorAll('dt');
+                for (let i = 0; i < dts.length; i++) {
+                    const dt = dts[i];
+                    const absLinkElement = dt.querySelector('a[href^="/abs/"]');
+                    const absLink = absLinkElement ? `https://arxiv.org/abs/${absLinkElement.href.split('/').pop()}` : '';
+
+                    const htmlLinkElement = dt.querySelector('a[href^="/pdf/"]');
+                    const htmlLink = htmlLinkElement ? `https://arxiv.org/html/${htmlLinkElement.href.split('/').pop().replace("pdf", "html")}` : '';
+
+                    const dd = dt.nextElementSibling;
+                    if (dd && dd.tagName === 'DD') {
+                        const titleElement = dd.querySelector('.list-title');
+                        const title = titleElement ? titleElement.textContent.replace(/^Title: /, '').trim() : 'No title found';
+
+                        headings.push({ title, absLink, htmlLink });
+                    }
+                }
+                return headings;
+            } catch (error) {
+                console.error(error);
+                throw new Error('Failed to fetch paper headings with all available CORS proxies');
+            }
+        }
+
+         function displayPaperHeadings(headings) {
+            paperList.innerHTML = '';
+            headings.forEach(heading => {
+                 const button = document.createElement('button');
+                button.className = 'paper-button';
+                if (!heading.htmlLink) {
+                    button.disabled = true;
+                    button.title = 'HTML version not available';
+                    button.textContent = `${heading.title} (HTML not available)`;
+                } else {
+                    button.title = heading.title;
+                    button.textContent = heading.title;
+                    button.addEventListener('click', () => {
+                         const index = selectedPapers.findIndex(paper => paper.htmlLink === heading.htmlLink)
+                        if (index > -1) {
+                            selectedPapers.splice(index, 1);
+                            button.classList.remove('selected');
+                        } else {
+                            selectedPapers.push(heading);
+                            button.classList.add('selected');
+                        }
+                        summarizeButton.style.display = selectedPapers.length > 0 ? 'block' : 'none';
+                    });
+                }
+                 paperList.appendChild(button);
+            });
+        }
+
+
+        summarizeButton.addEventListener('click', async () => {
+            summariesContainer.innerHTML = '<div class="loading">Loading summaries...</div>';
+            tokenCountContainer.textContent = ''; 
+            resultsSection.style.display = 'block';
+
+            try {
+                let summary = '';
+                    summary = await getLLMSummary(selectedPapers, getPrompt(activeMode));
+                displaySummaries([{ summary }]);
+            } catch (error) {
+                console.error(error);
+                summariesContainer.innerHTML = '<div>Error generating summaries.</div>';
+            }
+        });
+
+         async function getLLMSummary(papers, prompt) {
+             let combinedContent = await getCombinedPaperContent(papers);
+             const tokenCount = Math.ceil(combinedContent.replace(/\s/g, '').length / 4); // Calculate token count here
+
+             const workerUrl = 'https://aid.bhansalimanan55.workers.dev/';
+            const requestBody = {
+                promptType: 'arxiv',
+                mode: activeMode,
+                style: styleSelect.value,
+                text: combinedContent
+            };
+
+             try {
+                 const response = await fetch(workerUrl, {
+                    method: 'POST',
+                    headers: {
+                         'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+
+                if (!response.ok) {
+                     const errorData = await response.json();
+                     throw new Error(`Worker API Error: ${response.status} - ${errorData.error}`);
+                }
+
+                 const data = await response.json();
+                 if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts.length > 0) {
+                    tokenCountContainer.textContent = `Tokens sent to API: ${tokenCount}`; // Update token count display
+                    return data.candidates[0].content.parts[0].text;
+                 } else {
+                    throw new Error('Unexpected response format from Worker API.');
+                }
+            } catch (error) {
+                 console.error(error);
+                return `Failed to get summary from the LLM. Error: ${error}`;
+            }
+        }
+
+        async function getCombinedPaperContent(links) {
+            let combinedContent = "";
+            for (const link of links) {
+                try {
+                    let paperContent = await fetchPaperContent(link.htmlLink);
+                    paperContent = await filterContent(paperContent);
+                    combinedContent += `---BEGIN PAPER ${link.htmlLink}---\n${paperContent}\n---END PAPER ${link.htmlLink}---\n\n`;
+                } catch (error) {
+                    combinedContent += `---BEGIN PAPER ${link.htmlLink}---\nFailed to fetch or filter content.\n---END PAPER ${link.htmlLink}---\n\n`;
+                }
+            }
+            return combinedContent;
+        }
+
+
+        async function fetchPaperContent(url) {
+            currentProxyIndex = 0;
+            try {
+                const text = await fetchWithCorsFallback(url);
+                return text;
+            } catch (error) {
+                console.error(error);
+                throw new Error('Failed to fetch paper content with all available CORS proxies');
+            }
+        }
+
+        async function filterContent(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            doc.querySelectorAll('script, style, nav, footer, header, .navigation, .menu, .sidebar').forEach(el => el.remove());
+            let text = doc.body.textContent;
+            let paragraphs = text.split(/\n+/)
+                .map(p => p.trim())
+                .filter(p => {
+                    const wordCount = p.split(/\s+/).length;
+                    const checks = [
+                        !minWordFilter.checked || wordCount > 3,
+                        !minLengthFilter.checked || p.length > 30,
+                        !commonWordsFilter.checked || !p.match(/^(home|menu|search|login|sign in|copyright)/i)
+                    ];
+                    return checks.every(c => c);
+                });
+
+            return paragraphs.join('\n\n');
+        }
+
+        function displaySummaries(summaries) {
+            summariesContainer.innerHTML = '';
+            summaries.forEach(item => {
+                const formattedSummary = formatSummary(item.summary);
+                const summaryElement = `
+                    <div class="summary-item">
+                        <div class="summary-content">${formattedSummary}</div>
+                    </div>
+                `;
+                summariesContainer.innerHTML += summaryElement;
+            });
+        }
+
+
+        function formatSummary(text) {
+             return marked.parse(text);
+        }
+
+       function getPrompt(mode) {
+            const style = styleSelect.value;
+            const styleDescriptions = {
+                '5': "Explain Like I'm 5 years old using simple analogies",
+                '10': "Preschooler level with fundamental concepts",
+                '14': "High school student level with clear explanations",
+                '20': "Average adult level with practical examples",
+                '25': "College graduate level with technical context",
+                '30': "Master's degree level with detailed analysis",
+                '40': "PhD expert level with critical evaluation"
+            };
+
+            const prompts = {
+                summary: `Provide a comprehensive summary at ${styleDescriptions[style]} level:`,
+                interesting: "Identify the most novel/impactful aspects considering:\n1. Real-world applications\n2. Technical innovations\n3. Comparison to existing work\n4. Limitations/ethics",
+                keyInsights: "Extract key technical insights:\n1. Core contributions\n2. Experimental results\n3. Methodologies\n4. Critical analysis",
+                literatureReview: "Analyze in research context:\n1. Related works\n2. Differentiators\n3. Research gaps\n4. Future directions"
+            };
+
+            return prompts[mode];
+        }
+
+        modeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                modeButtons.forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                activeMode = button.dataset.mode;
+            });
+        });
+
+        selectAllButton.addEventListener('click', () => {
+             const allPaperButtons = paperList.querySelectorAll('.paper-button:not([disabled])');
+            selectedPapers = [];
+            allPaperButtons.forEach(button => {
+                button.classList.add('selected');
+                const buttonTitle = button.title;
+                 const heading = Array.from(paperList.children).find(item => item.title === buttonTitle);
+                 if (heading) {
+                     const absLinkElement = heading.querySelector('a[href^="/abs/"]');
+                     const absLink = absLinkElement ? `https://arxiv.org/abs/${absLinkElement.href.split('/').pop()}` : '';
+
+                     const htmlLinkElement = heading.querySelector('a[href^="/pdf/"]');
+                     const htmlLink = htmlLinkElement ? `https://arxiv.org/html/${htmlLinkElement.href.split('/').pop().replace("pdf", "html")}` : '';
+                      selectedPapers.push({title: heading.title, absLink, htmlLink});
+                }
+            });
+
+            summarizeButton.style.display = selectedPapers.length > 0 ? 'block' : 'none';
+        });
+    </script>
+</body>
+</html>
