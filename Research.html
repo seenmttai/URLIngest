@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <base href="urlingest.pages.dev" target="_blank">
     <title>ArXiv Research Summarizer</title>
@@ -7,15 +8,39 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>
     <style>
-        #modeButtons button{
+        #modeButtons button {
             margin: 5px;
         }
-        .mode-button.active, .mode-button.active:hover {
+
+        .mode-button.active,
+        .mode-button.active:hover {
             color: white !important;
         }
+        .pro-mode-buttons {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
 
+        .pro-mode-button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .pro-mode-button.active {
+            background-color: #4a90e2;
+            color: white;
+        }
     </style>
 </head>
+
 <body>
     <h1>ArXiv Research Summarizer</h1>
 
@@ -203,6 +228,12 @@
                 </label>
             </div>
         </div>
+         <div class="pro-mode-setting">
+            <div class="pro-mode-buttons">
+                <button id="standardModeButton" class="pro-mode-button active">Standard</button>
+                <button id="proModeButton" class="pro-mode-button">Pro</button>
+            </div>
+        </div>
     </div>
 
     <div id="modeSection">
@@ -254,9 +285,23 @@
         const styleSelect = document.getElementById('styleSelect');
         const modeButtons = document.getElementById('modeButtons').querySelectorAll('.mode-button');
         const selectAllButton = document.getElementById('selectAllButton');
+        const proModeButton = document.getElementById('proModeButton');
+        const standardModeButton = document.getElementById('standardModeButton');
         let selectedPapers = [];
         let activeMode = 'summary';
+        let isProMode = false;
 
+        proModeButton.addEventListener('click', () => {
+            isProMode = true;
+            proModeButton.classList.add('active');
+            standardModeButton.classList.remove('active');
+        });
+
+        standardModeButton.addEventListener('click', () => {
+            isProMode = false;
+            standardModeButton.classList.add('active');
+            proModeButton.classList.remove('active');
+        });
 
         fetchPapersButton.addEventListener('click', async () => {
             const selectedTopic = topicSelect.value;
@@ -299,7 +344,11 @@
                         const titleElement = dd.querySelector('.list-title');
                         const title = titleElement ? titleElement.textContent.replace(/^Title: /, '').trim() : 'No title found';
 
-                        headings.push({ title, absLink, htmlLink });
+                        headings.push({
+                            title,
+                            absLink,
+                            htmlLink
+                        });
                     }
                 }
                 return headings;
@@ -314,16 +363,16 @@
             headings.forEach(heading => {
                 const button = document.createElement('button');
                 button.className = 'paper-button';
-                if (!heading.htmlLink) {
+                 if (!heading.htmlLink) {
                     button.disabled = true;
                     button.title = 'HTML version not available';
                     button.textContent = `${heading.title} (HTML not available)`;
                 } else {
                     button.title = heading.title;
                     button.textContent = heading.title;
-                    button.addEventListener('click', () => {
+                     button.addEventListener('click', () => {
                         const index = selectedPapers.findIndex(paper => paper.htmlLink === heading.htmlLink)
-                        if (index > -1) {
+                         if (index > -1) {
                             selectedPapers.splice(index, 1);
                             button.classList.remove('selected');
                         } else {
@@ -337,7 +386,6 @@
             });
         }
 
-
         summarizeButton.addEventListener('click', async () => {
             summariesContainer.innerHTML = '<div class="loading">Loading summaries...</div>';
             tokenCountContainer.textContent = '';
@@ -347,7 +395,9 @@
             try {
                 let summary = '';
                 summary = await getLLMSummary(selectedPapers, getPrompt(activeMode));
-                displaySummaries([{ summary }]);
+                displaySummaries([{
+                    summary
+                }]);
             } catch (error) {
                 console.error(error);
                 summariesContainer.innerHTML = '<div>Error generating summaries.</div>';
@@ -358,12 +408,13 @@
             let combinedContent = await getCombinedPaperContent(papers);
             const tokenCount = Math.ceil(combinedContent.replace(/\s/g, '').length / 4);
 
-            const workerUrl = 'https://aid.bhansalimanan55.workers.dev/';
+            const workerUrl = 'https://aid101.deno.dev/';
             const requestBody = {
                 promptType: 'arxiv',
                 mode: activeMode,
                 style: styleSelect.value,
-                text: combinedContent
+                text: combinedContent,
+                model: isProMode ? 'gemini-exp-1206' : 'gemini-2.0-flash-exp'
             };
 
             try {
@@ -396,7 +447,7 @@
         async function getCombinedPaperContent(links) {
             let combinedContent = "";
             for (const link of links) {
-                try {
+                 try {
                     let paperContent = await fetchPaperContent(link.htmlLink);
                     paperContent = await filterContent(paperContent);
                     combinedContent += `---BEGIN PAPER ${link.htmlLink}---\n${paperContent}\n---END PAPER ${link.htmlLink}---\n\n`;
@@ -407,10 +458,9 @@
             return combinedContent;
         }
 
-
         async function fetchPaperContent(url) {
             currentProxyIndex = 0;
-            try {
+             try {
                 const text = await fetchWithCORSBypass(url);
                 return text;
             } catch (error) {
@@ -420,7 +470,7 @@
         }
 
         async function filterContent(html) {
-            const parser = new DOMParser();
+             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             doc.querySelectorAll('script, style, nav, footer, header, .navigation, .menu, .sidebar').forEach(el => el.remove());
             let text = doc.body.textContent;
@@ -441,7 +491,7 @@
 
         function displaySummaries(summaries) {
             console.log('Raw API Response:', summaries);
-            if (typeof summaries[0]?.summary === 'undefined') {
+             if (typeof summaries[0]?.summary === 'undefined') {
               console.error('Invalid summary structure:', summaries);
             }
             summariesContainer.innerHTML = '';
@@ -459,7 +509,6 @@
                 summariesContainer.innerHTML += summaryElement;
             });
         }
-
 
         function formatSummary(text) {
             return marked.parse(text);
@@ -495,25 +544,26 @@
             });
         });
 
-        selectAllButton.addEventListener('click', () => {
+       selectAllButton.addEventListener('click', () => {
             const allPaperButtons = paperList.querySelectorAll('.paper-button:not([disabled])');
             selectedPapers = [];
             allPaperButtons.forEach(button => {
                 button.classList.add('selected');
-                const buttonTitle = button.title;
+                 const buttonTitle = button.title;
                 const heading = Array.from(paperList.children).find(item => item.title === buttonTitle);
                 if (heading) {
-                    const absLinkElement = heading.querySelector('a[href^="/abs/"]');
+                     const absLinkElement = heading.querySelector('a[href^="/abs/"]');
                     const absLink = absLinkElement ? `https://arxiv.org/abs/${absLinkElement.href.split('/').pop()}` : '';
 
                     const htmlLinkElement = heading.querySelector('a[href^="/pdf/"]');
                     const htmlLink = htmlLinkElement ? `https://arxiv.org/html/${htmlLinkElement.href.split('/').pop().replace("pdf", "html")}` : '';
                     selectedPapers.push({ title: heading.title, absLink, htmlLink });
-                }
+                 }
             });
 
             summarizeButton.style.display = selectedPapers.length > 0 ? 'block' : 'none';
         });
     </script>
 </body>
+
 </html>
