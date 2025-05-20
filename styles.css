@@ -2,13 +2,13 @@ body {
     font-family: Arial, sans-serif;
     background: #f0f5ff;
     margin: 0;
-    padding: 20px;
+    padding: 15px; /* Adjusted padding */
     min-height: 100vh;
 }
 
 #dropZone {
-    width: 80%;
-    max-width: 600px;
+    width: 90%; /* Adjusted width */
+    max-width: 550px; /* Adjusted max-width */
     min-height: 200px;
     margin: 20px auto;
     border: 3px dashed #4a90e2;
@@ -26,8 +26,8 @@ body {
 }
 
 #linksList {
-    width: 80%;
-    max-width: 600px;
+    width: 90%; /* Adjusted width */
+    max-width: 550px; /* Adjusted max-width */
     margin: 20px auto;
     padding: 0;
     list-style: none;
@@ -112,11 +112,13 @@ h1 {
 #scanButton,
 #stopScanButton,
 #fetchPapersButton,
+#searchPapersButton, /* Added searchPapersButton here for consistent desktop button styling */
 #summarizeButton,
 #selectAllButton,
+.pagination-button, /* Added pagination-button for consistent desktop styling */
 #addPatternLinksButton {
     display: inline-block;
-    margin: 20px 10px;
+    margin: 10px 5px; /* Unified margin for these action buttons on desktop */
     padding: 10px 20px;
     background: #4a90e2;
     color: white;
@@ -133,6 +135,8 @@ h1 {
 #scanButton:hover,
 #stopScanButton:hover,
 #fetchPapersButton:hover,
+#searchPapersButton:hover, /* Added hover style for searchPapersButton */
+.pagination-button:not(:disabled):hover, /* Added hover style for pagination-button */
 #summarizeButton:hover,
 #selectAllButton:hover,
 #addLinkButton:hover,
@@ -140,6 +144,11 @@ h1 {
     background: #357abd;
 }
 
+/* Ensure #searchInput (which has pattern-link-input) has margin consistent with buttons in #topicSection */
+#topicSection .pattern-link-input { /* More specific selector for #searchInput */
+    margin-top: 10px; /* Add top margin for desktop */
+    margin-bottom: 10px; /* Add bottom margin for desktop, matching button vertical rhythm */
+}
 
 .button-container {
     text-align: center;
@@ -164,8 +173,8 @@ h1 {
 .parsing-status,
 .scanning-status {
     margin: 20px auto;
-    width: 80%;
-    max-width: 600px;
+    width: 90%; /* Adjusted width */
+    max-width: 550px; /* Adjusted max-width */
     padding: 15px;
     background: white;
     border-radius: 5px;
@@ -242,8 +251,8 @@ h1 {
 #resultsSection,
 #paperSelectionSection,
 #modeSection {
-    width: 80%;
-    max-width: 600px;
+    width: 90%; /* Adjusted width */
+    max-width: 550px; /* Adjusted max-width */
     margin: 20px auto;
     padding: 15px;
     background: white;
@@ -323,8 +332,8 @@ input:checked + .slider:before {
 }
 
 .add-link-container {
-    width: 80%;
-    max-width: 600px;
+    width: 90%; /* Adjusted width */
+    max-width: 550px; /* Adjusted max-width */
     margin: 20px auto;
     display: flex;
     gap: 10px;
@@ -417,8 +426,8 @@ input:checked + .slider:before {
     margin-top: 0;
 }
 #textContent, #scanResults, #summaries, .vulnerability-item {
-    width: 80%;
-    max-width: 600px;
+    width: 90%; /* Adjusted width */
+    max-width: 550px; /* Adjusted max-width */
     margin: 20px auto;
     max-height: 500px;
     overflow-y: auto;
@@ -495,4 +504,291 @@ input:checked + .slider:before {
     margin-top: 10px;
     font-size: 0.9em;
     color: #777;
+}
+
+/* Loading Animation Styles */
+.loading-overlay {
+    position: fixed; /* Full-screen overlay */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it's on top */
+}
+
+.loader {
+    border: 8px solid #f3f3f3; /* Light grey */
+    border-top: 8px solid #4a90e2; /* Blue */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Media Queries for Mobile Responsiveness */
+@media (max-width: 768px) {
+    body {
+        padding: 10px; /* Further reduce padding for small screens */
+    }
+
+    h1 {
+        font-size: 1.8em; /* Slightly smaller H1 for mobile */
+        margin-bottom: 20px;
+    }
+
+    #dropZone,
+    #linksList,
+    .parsing-status,
+    .scanning-status,
+    .filter-settings,
+    .source-code-settings,
+    .pattern-input-container,
+    #topicSection,
+    #resultsSection,
+    #paperSelectionSection,
+    #modeSection,
+    #textContent,
+    #scanResults,
+    #summaries,
+    .vulnerability-item,
+    .add-link-container,
+    .settings-container {
+        width: 95%; /* Use more screen width on mobile */
+        max-width: 100%; /* Allow full width */
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .button-container {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #parseButton,
+    #deepParseButton,
+    #copyAllButton,
+    #stopParseButton,
+    #scanButton,
+    #stopScanButton,
+    #fetchPapersButton,
+    #summarizeButton,
+    #selectAllButton,
+    #addPatternLinksButton,
+    .action-button { /* General styling for primary action buttons */
+        padding: 12px 10px; /* Comfortable touch targets */
+        font-size: 1em;
+        display: block;
+        width: 100%;
+        margin: 10px 0; /* Stack buttons with some space */
+        box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    }
+    
+    /* Specific override for smaller action buttons if needed, otherwise the above general one applies */
+    .link-actions .action-button {
+        padding: 10px 5px; /* Slightly smaller padding if they were too big from the general rule */
+    }
+
+    .toggle-container {
+        margin-bottom: 10px; /* Space before stacked buttons */
+        display: flex; /* Ensure items are in a row */
+        justify-content: center; /* Center the toggle switch */
+        align-items: center;
+    }
+
+    .add-link-container {
+        flex-direction: column; /* Stack input and button */
+    }
+
+    .add-link-container .link-input,
+    .add-link-container .action-button { /* #addLinkButton is covered by .action-button */
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        margin-bottom: 10px; /* Space between stacked items */
+        box-sizing: border-box;
+    }
+    .add-link-container .action-button:last-child {
+        margin-bottom: 0; /* No margin for the last item */
+    }
+
+
+    .pattern-input-container input,
+    .pattern-input-container button { /* This covers #addPatternLinksButton */
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+    }
+    .pattern-input-container button:last-child,
+    .pattern-input-container input:last-child {
+        margin-bottom: 0;
+    }
+    
+    .pattern-count-input { /* Was previously more specific */
+        width: 100% !important; /* Override previous inline-style-like specificity */
+    }
+
+    .link-item {
+        flex-direction: column; /* Stack icon/text and actions */
+        align-items: flex-start; /* Align items to the start */
+    }
+    
+    .link-icon {
+        margin-bottom: 10px; /* Space between icon and text/actions */
+    }
+
+    .link-text {
+        word-break: break-all; /* Prevent long URLs from overflowing */
+        margin-bottom: 10px; /* Space between text and actions */
+    }
+    
+    .link-edit-input {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+    }
+
+    .link-actions {
+        flex-direction: column; /* Stack action buttons */
+        width: 100%; /* Make action buttons take full width */
+        margin-top: 10px; /* Space between link text and action buttons */
+    }
+
+    .link-actions .action-button {
+        width: 100%;
+        margin-left: 0; /* Reset any specific margins if they existed */
+        margin-right: 0;
+        margin-bottom: 5px; /* Space between stacked action buttons */
+        box-sizing: border-box;
+    }
+    .link-actions .action-button:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Research.html specific adjustments */
+    #modeButtons .mode-button {
+        display: block;
+        width: 100%;
+        margin: 5px 0; /* Vertical stacking with space */
+        box-sizing: border-box;
+    }
+
+    .pro-mode-buttons {
+        flex-direction: column; /* Stack Pro mode buttons */
+        align-items: stretch; /* Make buttons take full width */
+    }
+
+    .pro-mode-buttons .pro-mode-button {
+        width: 100%;
+        margin: 5px 0; /* Vertical stacking with space */
+        box-sizing: border-box;
+    }
+    
+    /* Ensure select elements are usable on mobile */
+    #topicSelect,
+    #styleSelect,
+    #searchInput { /* Apply mobile styling to searchInput as well */
+        width: 100%; /* Full width */
+        padding: 12px 10px; /* Comfortable touch targets */
+        font-size: 1em;
+        box-sizing: border-box;
+        margin-left: 0; /* Override any specific desktop margins */
+        margin-right: 0; /* Override any specific desktop margins */
+    }
+    
+    .select-wrapper::after { /* Adjust dropdown arrow position if needed due to padding changes */
+        top: 50%; 
+        right: 15px; /* Ensure it's not too close to the edge */
+    }
+
+    /* Ensure search button stacks correctly on mobile */
+    #searchPapersButton {
+        margin-top: 0; /* Reset desktop margin if #searchInput provides bottom margin */
+        /* It already gets display: block and width: 100% from the .action-button rule in media query */
+    }
+
+    /* Pagination specific styles for mobile */
+    .pagination-controls {
+        margin-top: 15px;
+        margin-bottom: 15px;
+        display: flex; /* Use flexbox for better alignment */
+        justify-content: center; /* Center items */
+        align-items: center; /* Align items vertically */
+    }
+
+    .pagination-button {
+        margin-left: 5px !important; 
+        margin-right: 5px !important;
+        width: auto !important; /* Override full-width from general .action-button on mobile */
+        display: inline-block !important; /* Override block from general .action-button on mobile */
+        padding: 10px 12px !important; /* Slightly smaller padding for prev/next buttons */
+        font-size: 0.9em !important; /* Slightly smaller font */
+    }
+    
+    .pagination-button:disabled {
+        background-color: #ccc !important; /* Ensure disabled style is clear */
+        cursor: not-allowed !important;
+        opacity: 0.7 !important;
+    }
+
+    .pagination-info {
+        display: inline-block;
+        margin: 0 8px !important; /* Adjust margin for mobile */
+        font-weight: bold;
+        font-size: 0.9em; /* Match button font size */
+        color: #333;
+    }
+}
+/* General Pagination Styles (Desktop and Mobile) */
+.pagination-controls {
+    text-align: center;
+    margin-top: 20px; /* Space above pagination controls */
+    margin-bottom: 10px; /* Space below pagination controls */
+}
+
+.pagination-button:disabled {
+    background-color: #ccc; /* Standard disabled style */
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pagination-button:disabled:hover {
+    background-color: #ccc; /* Keep disabled style on hover */
+    opacity: 0.6;
+}
+
+
+.pagination-info {
+    display: inline-block; /* Keep inline for desktop if not overridden by mobile */
+    margin: 0 15px; /* Desktop margin */
+    font-weight: bold;
+    color: #333; /* Darker text for better readability */
+}
+
+#abstractPopup {
+    display: none; /* Initially hidden */
+    position: absolute; /* Positioned by JS */
+    border: 1px solid #b0c4de; /* Softer border */
+    background-color: #f9f9f9; /* Light background */
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    z-index: 1001; /* Above other content but below critical alerts if any */
+    max-width: 400px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 0.9em; /* Slightly smaller text for popup */
+    line-height: 1.4;
+    word-wrap: break-word; /* Ensure long words don't break layout */
+    border-radius: 6px; /* Rounded corners */
 }

@@ -117,3 +117,17 @@ function shouldSkipLink(url) {
     const lowerCaseUrl = url.toLowerCase();
     return unreadableFileExtensions.some(ext => lowerCaseUrl.endsWith(ext));
 }
+
+function showLoader() {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+    }
+}
+
+function hideLoader() {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+}

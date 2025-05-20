@@ -4,12 +4,16 @@
 <head>
     <base href="urlingest.pages.dev" target="_blank">
     <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>
     <title>URLIngest - Web Content Aggregation</title>
 </head>
 
 <body>
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loader"></div>
+    </div>
     <h1>Drop Links Here</h1>
     <div id="dropZone">
         <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#4a90e2" stroke-width="2">
@@ -293,6 +297,7 @@
                 return;
             }
 
+            showLoader();
             stopParsing = false;
             stopParseButton.style.display = 'inline-block';
             visitedUrls.clear();
@@ -314,8 +319,9 @@
             const queue = [...links].map(link => link.href).filter(url => !shouldSkipLink(url));
             const allContent = [];
 
-            while (queue.length > 0 && !stopParsing) {
-                const url = queue.shift();
+            try {
+                while (queue.length > 0 && !stopParsing) {
+                    const url = queue.shift();
                 const normalizedUrl = normalizeUrl(url);
 
                 if (visitedUrls.has(normalizedUrl)) continue;
@@ -348,14 +354,22 @@
 
                 textContent.innerHTML = allContent.join('<hr>');
             }
-
-            stopParseButton.style.display = 'none';
-            status.innerHTML = '<div class="progress-item done">Parsing completed!</div>' + status.innerHTML;
+            } catch (error) {
+                console.error("Error during deep parse:", error);
+                status.innerHTML = `<div class="progress-item" style="background-color: #ffebee;">Error during parsing.</div>` + status.innerHTML;
+            } finally {
+                hideLoader();
+                stopParseButton.style.display = 'none';
+                if (!stopParsing) {
+                    status.innerHTML = '<div class="progress-item done">Parsing completed!</div>' + status.innerHTML;
+                }
+            }
         });
 
         stopParseButton.addEventListener('click', () => {
             stopParsing = true;
             stopParseButton.style.display = 'none';
+            hideLoader(); // Also hide loader if parsing is manually stopped
         });
 
         parseButton.addEventListener('click', async () => {
@@ -364,7 +378,7 @@
                 alert('Please add some links first!');
                 return;
             }
-
+            showLoader();
             textContent.style.display = 'block';
             copyAllButton.style.display = 'inline-block';
             textContent.innerHTML = 'Parsing content...';
@@ -382,8 +396,9 @@
             };
             const allContent = [];
 
-            for (const link of links) {
-                const url = link.href;
+            try {
+                for (const link of links) {
+                    const url = link.href;
                 if (shouldSkipLink(url)) {
                     allContent.push(`<div class="content-section"><h3>${url}</h3><p>Skipped unreadable file</p></div>`);
                     continue;
@@ -405,9 +420,18 @@
                     allContent.push(`<div class="content-section"><h3>${url}</h3><p>Error fetching content: ${error.message}</p></div>`);
                 }
             }
-
-            textContent.classList.remove('loading');
-            textContent.innerHTML = allContent.join('<hr>');
+            } catch (error) {
+                console.error("Error during parse:", error);
+                textContent.innerHTML = `<div class="content-section"><p>Error during parsing. Check console for details.</p></div>`;
+            } finally {
+                hideLoader();
+                textContent.classList.remove('loading');
+                if (allContent.length > 0 && !textContent.innerHTML.includes("Error during parsing")) {
+                    textContent.innerHTML = allContent.join('<hr>');
+                } else if (allContent.length === 0 && !textContent.innerHTML.includes("Error during parsing")) {
+                    textContent.innerHTML = 'No content parsed.';
+                }
+            }
         });
 
         copyAllButton.addEventListener('click', () => {
