@@ -4,7 +4,6 @@
 <head>
     <base href="urlingest.pages.dev" target="_blank">
     <title>ArXiv Research Summarizer</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>
@@ -43,9 +42,6 @@
 </head>
 
 <body>
-    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-        <div class="loader"></div>
-    </div>
     <h1>ArXiv Research Summarizer</h1>
 
     <div id="topicSection">
@@ -209,8 +205,6 @@
             <option value="math.SG">Symplectic Geometry</option>
         </select>
         <button id="fetchPapersButton" class="action-button">Fetch Papers</button>
-        <input type="text" id="searchInput" placeholder="Search ArXiv by keyword..." class="pattern-link-input" style="margin-top: 10px;">
-        <button id="searchPapersButton" class="action-button">Search Papers</button>
     </div>
     <div class="settings-container">
         <div class="filter-settings">
@@ -266,7 +260,6 @@
             </select>
         </div>
         <div id="paperList"></div>
-        <div id="paginationControls" class="pagination-controls" style="text-align: center; margin-top: 20px;"></div>
         <button id="selectAllButton" class="action-button">Select All</button>
         <button id="summarizeButton" class="action-button">Summarize Selected Papers</button>
     </div>
@@ -294,24 +287,9 @@
         const selectAllButton = document.getElementById('selectAllButton');
         const proModeButton = document.getElementById('proModeButton');
         const standardModeButton = document.getElementById('standardModeButton');
-        const searchInput = document.getElementById('searchInput'); // New search input
-        const searchPapersButton = document.getElementById('searchPapersButton'); // New search button
-        const paginationControls = document.getElementById('paginationControls'); // Pagination controls
-        const abstractPopup = document.getElementById('abstractPopup'); // Abstract popup element
-
         let selectedPapers = [];
         let activeMode = 'summary';
         let isProMode = false;
-
-        // Pagination state variables
-        let currentPage = 1;
-        let resultsPerPage = 25; // Default for topic listings; ArXiv search default is 50. Can be adjusted.
-        let currentQuery = '';
-        let currentTopic = '';
-        let currentFetchMode = 'topic'; // 'topic' or 'search'
-
-        let abstractCache = {}; // Cache for fetched abstracts
-
 
         proModeButton.addEventListener('click', () => {
             isProMode = true;
@@ -333,179 +311,18 @@
             resultsSection.style.display = 'none';
             selectAllButton.style.display = 'block';
             selectedPapers = [];
-            showLoader();
-            currentPage = 1;
-            currentTopic = topicSelect.value;
-            currentQuery = '';
-            currentFetchMode = 'topic';
-            searchInput.value = ''; // Clear search input when fetching by topic
-            loadPaperData();
-        });
-
-        searchPapersButton.addEventListener('click', async () => {
-            const query = searchInput.value.trim();
-            if (!query) {
-                alert('Please enter a search query.');
-                return;
-            }
-            currentPage = 1;
-            currentQuery = query;
-            currentTopic = topicSelect.value; // Keep topic context if needed
-            currentFetchMode = 'search';
-            loadPaperData();
-        });
-
-        async function loadPaperData() {
-            showLoader();
-            paperList.innerHTML = '<div class="loading">Fetching papers...</div>';
-            paginationControls.innerHTML = ''; // Clear old controls
-            selectedPapers = [];
-            summarizeButton.style.display = 'none';
-            selectAllButton.style.display = 'block'; // Keep select all visible for new list
-            resultsSection.style.display = 'none'; // Hide old results
-            paperSelectionSection.style.display = 'block'; // Ensure paper list section is visible
-
-            let headings = [];
-            let currentResultsPerPage = (currentFetchMode === 'search') ? 50 : 25; // ArXiv defaults
 
             try {
-                if (currentFetchMode === 'topic') {
-                    resultsPerPage = 25; // Ensure this is set for topic mode
-                    headings = await getPaperHeadings(currentTopic, (currentPage - 1) * resultsPerPage);
-                } else if (currentFetchMode === 'search') {
-                    resultsPerPage = 50; // Ensure this is set for search mode
-                    headings = await searchArxivPapers(currentQuery, (currentPage - 1) * resultsPerPage, resultsPerPage);
-                }
-                displayPaperHeadings(headings);
-                renderPaginationControls(headings.length, resultsPerPage); // Pass current resultsPerPage
+                const paperHeadings = await getPaperHeadings(selectedTopic);
+                displayPaperHeadings(paperHeadings);
             } catch (error) {
-                console.error(`Error loading paper data (mode: ${currentFetchMode}):`, error);
-                paperList.innerHTML = `<div>Error fetching papers. ${error.message}</div>`;
-            } finally {
-                hideLoader();
+                paperList.innerHTML = '<div>Error fetching papers.</div>';
             }
-        }
+        });
 
-        function renderPaginationControls(numResultsThisPage) {
-            paginationControls.innerHTML = ''; // Clear previous controls
-            if (numResultsThisPage === 0 && currentPage === 1) { // No results at all
-                return; // No pagination needed
-            }
-
-            const pageInfo = document.createElement('span');
-            pageInfo.textContent = `Page ${currentPage}`;
-            pageInfo.style.margin = "0 10px";
-            pageInfo.className = "pagination-info";
-
-
-            const prevButton = document.createElement('button');
-            prevButton.textContent = 'Previous';
-            prevButton.className = 'action-button pagination-button';
-            prevButton.disabled = currentPage === 1;
-            prevButton.addEventListener('click', () => changePage(currentPage - 1));
-            paginationControls.appendChild(prevButton);
-
-            paginationControls.appendChild(pageInfo);
-
-            const nextButton = document.createElement('button');
-            nextButton.textContent = 'Next';
-            nextButton.className = 'action-button pagination-button';
-            // Heuristic: if fewer results than page size are returned, it's the last page.
-            // Or if ArXiv explicitly says no more results (harder to check reliably from HTML alone)
-            nextButton.disabled = numResultsThisPage < currentResultsPerPage;
-            nextButton.addEventListener('click', () => changePage(currentPage + 1));
-            paginationControls.appendChild(nextButton);
-        }
-
-        function changePage(newPage) {
-            if (newPage < 1) return;
-            currentPage = newPage;
-            loadPaperData();
-        }
-        
-        // Renamed from searchAndDisplayPapers
-        async function searchArxivPapers(query, startOffset, searchResultsPerPage) { 
-            console.log(`Searching for: "${query}", starting at offset: ${startOffset}, size: ${searchResultsPerPage}`);
-            const arxivSearchUrl = `https://arxiv.org/search/?query=${encodeURIComponent(query)}&searchtype=all&source=header&start=${startOffset}&size=${searchResultsPerPage}`;
-
-            try {
-                const htmlText = await fetchWithCORSBypass(arxivSearchUrl);
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlText, 'text/html');
-
-                const headings = [];
-                const results = doc.querySelectorAll('li.arxiv-result');
-
-                if (results.length === 0) {
-                    // paperList.innerHTML = '<div>No papers found for your search query.</div>'; // This will be handled by displayPaperHeadings
-                    return []; // Return empty array, loadPaperData will handle display
-                }
-
-                results.forEach(result => {
-                    const titleElement = result.querySelector('p.title.is-5');
-                    const title = titleElement ? titleElement.textContent.trim() : 'No title found';
-
-                    const absLinkElement = result.querySelector('p.list-title.is-inline-block a[href*="/abs/"]');
-                    let absLink = '';
-                    let htmlLink = '';
-
-                    if (absLinkElement) {
-                        const absPath = absLinkElement.getAttribute('href');
-                        if (absPath) {
-                            absLink = `https://arxiv.org${absPath}`;
-                            const paperId = absPath.split('/').pop();
-                            if (paperId) {
-                                htmlLink = `https://arxiv.org/html/${paperId}`;
-                            }
-                        }
-                    }
-                    
-                    // Fallback if the primary 'p.list-title a' selector fails, try to find any link to abs page
-                    if (!absLink) {
-                         const genericAbsLinkElement = result.querySelector('a[href*="/abs/"]');
-                         if (genericAbsLinkElement) {
-                            const absPath = genericAbsLinkElement.getAttribute('href');
-                            if (absPath) {
-                                absLink = absPath.startsWith('http') ? absPath : `https://arxiv.org${absPath}`;
-                                const paperId = absLink.split('/').pop();
-                                 if (paperId) {
-                                    htmlLink = `https://arxiv.org/html/${paperId}`;
-                                }
-                            }
-                         }
-                    }
-
-
-                    // Only add if we have at least an abstract link
-                    if (absLink) {
-                         headings.push({
-                            title,
-                            absLink,
-                            htmlLink // This might be empty if no PDF link was found or applicable
-                        });
-                    }
-                });
-                
-                if (headings.length === 0 && results.length > 0) {
-                    // This case means results were found, but links/titles couldn't be parsed as expected.
-                    // paperList.innerHTML = '<div>Found papers, but could not parse details...</div>'; // Handled by displayPaperHeadings
-                    console.warn("Parsed results but extracted 0 headings. Check query selectors.", results);
-                    return [];
-                }
-                // displayPaperHeadings(headings); // This will be called by loadPaperData
-                return headings;
-
-            } catch (error) {
-                console.error('Error searching papers:', error);
-                // paperList.innerHTML = '<div>Error searching papers. Check console for details.</div>'; // Handled by loadPaperData
-                throw error; // Re-throw to be caught by loadPaperData
-            }
-        }
-
-        async function getPaperHeadings(topic, skipCount) { // Added skipCount
+        async function getPaperHeadings(topic) {
             currentProxyIndex = 0;
-            // resultsPerPage is global, can be used here
-            const arxivUrl = `https://arxiv.org/list/${topic}/new?skip=${skipCount}&show=${resultsPerPage}`;
+            const arxivUrl = `https://arxiv.org/list/${topic}/new`;
 
             try {
                 const text = await fetchWithCORSBypass(arxivUrl);
@@ -534,20 +351,15 @@
                         });
                     }
                 }
-                return headings; // Return headings for loadPaperData
+                return headings;
             } catch (error) {
                 console.error(error);
-                // hideLoader(); // Handled by loadPaperData's finally block
-                throw new Error('Failed to fetch paper headings with all available CORS proxies'); // Re-throw
+                throw new Error('Failed to fetch paper headings with all available CORS proxies');
             }
         }
 
         function displayPaperHeadings(headings) {
-            paperList.innerHTML = ''; // Clear previous list items
-            if (headings.length === 0) {
-                paperList.innerHTML = '<div>No papers found for the current selection or page.</div>';
-                return;
-            }
+            paperList.innerHTML = '';
             headings.forEach(heading => {
                 const button = document.createElement('button');
                 button.className = 'paper-button';
@@ -558,12 +370,6 @@
                 } else {
                     button.title = heading.title;
                     button.textContent = heading.title;
-                    button.dataset.absLink = heading.absLink; // Store absLink
-                    button.dataset.paperTitle = heading.title; // Store title for context
-
-                    button.addEventListener('mouseenter', handlePaperMouseEnter);
-                    button.addEventListener('mouseleave', handlePaperMouseLeave);
-
                      button.addEventListener('click', () => {
                         const index = selectedPapers.findIndex(paper => paper.htmlLink === heading.htmlLink)
                          if (index > -1) {
@@ -585,7 +391,7 @@
             tokenCountContainer.textContent = '';
             resultsSection.style.display = 'block';
             summariesContainer.style.display = 'block';
-            showLoader();
+
             try {
                 let summary = '';
                 summary = await getLLMSummary(selectedPapers, getPrompt(activeMode));
@@ -595,8 +401,6 @@
             } catch (error) {
                 console.error(error);
                 summariesContainer.innerHTML = '<div>Error generating summaries.</div>';
-            } finally {
-                hideLoader();
             }
         });
 
@@ -636,7 +440,6 @@
                 }
             } catch (error) {
                 console.error(error);
-                hideLoader(); // Ensure loader is hidden on error
                 return `Failed to get summary from the LLM. Error: ${error}`;
             }
         }
@@ -657,14 +460,11 @@
 
         async function fetchPaperContent(url) {
             currentProxyIndex = 0;
-            // Not adding showLoader/hideLoader here to avoid flashing during multi-paper fetch.
-            // The main loader is active during the entire getLLMSummary process.
              try {
                 const text = await fetchWithCORSBypass(url);
                 return text;
             } catch (error) {
                 console.error(error);
-                // No hideLoader() here, as it's managed by the calling function (getLLMSummary)
                 throw new Error('Failed to fetch paper content with all available CORS proxies');
             }
         }
@@ -763,94 +563,7 @@
 
             summarizeButton.style.display = selectedPapers.length > 0 ? 'block' : 'none';
         });
-
-        async function handlePaperMouseEnter(event) {
-            const absLink = event.target.dataset.absLink;
-            if (!absLink) return;
-
-            showAbstractPopup(event); // Show popup immediately at cursor position
-
-            if (abstractCache[absLink]) {
-                abstractPopup.innerHTML = abstractCache[absLink];
-            } else {
-                abstractPopup.innerHTML = '<em>Loading abstract...</em>';
-                try {
-                    const htmlText = await fetchWithCORSBypass(absLink);
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(htmlText, 'text/html');
-                    // Updated selector based on ArXiv structure: <div class="abstract mathjax">...</div>
-                    // And the actual abstract text is often within that, sometimes without a specific inner span, or within <span class="mathjax--abstract">
-                    let abstractText = 'Abstract not found.';
-                    const abstractDiv = doc.querySelector('div.abstract.mathjax');
-                    if (abstractDiv) { // Check if the main abstract div exists
-                        const abstractSpan = abstractDiv.querySelector('span.mathjax--abstract'); // Try specific span first
-                        if (abstractSpan && abstractSpan.textContent.trim().toLowerCase() !== 'abstract') {
-                             abstractText = abstractSpan.innerHTML; // Use innerHTML to preserve formatting like <strong>
-                        } else {
-                            // Fallback: Try to get content directly from the div, excluding the <strong>Abstract</strong> part
-                            let tempDiv = abstractDiv.cloneNode(true);
-                            tempDiv.querySelectorAll('strong, h3.is-size-5').forEach(el => el.remove()); // Remove "Abstract" heading or similar
-                            abstractText = tempDiv.textContent.trim();
-                            if (!abstractText) { // If still empty, it might be just the "Abstract" title was there
-                                abstractText = "Abstract content not directly parseable, link to page provided.";
-                            }
-                        }
-                    } else {
-                         // Fallback for older or different structures like <blockquote class="abstract">
-                        const abstractBlockquote = doc.querySelector('blockquote.abstract');
-                        if (abstractBlockquote) {
-                             let tempBlockquote = abstractBlockquote.cloneNode(true);
-                             tempBlockquote.querySelectorAll('strong, h3.is-size-5').forEach(el => el.remove());
-                             abstractText = tempBlockquote.textContent.trim();
-                        }
-                    }
-                    
-                    abstractCache[absLink] = abstractText;
-                    abstractPopup.innerHTML = abstractText;
-                } catch (error) {
-                    console.error('Failed to fetch abstract:', error);
-                    abstractPopup.innerHTML = '<em>Failed to load abstract.</em>';
-                    abstractCache[absLink] = '<em>Failed to load abstract.</em>'; // Cache error state
-                }
-            }
-            // Re-calculate position after content is loaded/changed, as popup dimensions might change
-            showAbstractPopup(event); 
-        }
-
-        function handlePaperMouseLeave(event) {
-            abstractPopup.style.display = 'none';
-        }
-
-        function showAbstractPopup(event) {
-            abstractPopup.style.display = 'block';
-            // Position calculation
-            let x = event.clientX + 15; // 15px offset from cursor
-            let y = event.clientY + 15;
-
-            // Ensure popup stays within the viewport
-            const popupWidth = abstractPopup.offsetWidth;
-            const popupHeight = abstractPopup.offsetHeight;
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
-
-            if (x + popupWidth + 15 > windowWidth) { // Add 15 for scrollbar or edge padding
-                x = event.clientX - popupWidth - 15; // Position to the left of cursor
-            }
-            if (y + popupHeight + 15 > windowHeight) {
-                y = event.clientY - popupHeight - 15; // Position above cursor
-            }
-            
-            // Ensure it doesn't go off-screen top or left
-            if (x < 0) x = 5;
-            if (y < 0) y = 5;
-
-
-            abstractPopup.style.left = x + 'px';
-            abstractPopup.style.top = y + 'px';
-        }
-
     </script>
-    <div id="abstractPopup" style="display: none; position: absolute; border: 1px solid #ccc; background-color: white; padding: 10px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); z-index: 1001; max-width: 400px; max-height: 300px; overflow-y: auto;"></div>
 </body>
 
 </html>
