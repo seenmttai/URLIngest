@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitIngest v2 - GitHub Repository File Aggregator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f5ff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        h1 {
+            text-align: center;
+            color: #2563eb;
+            margin-bottom: 30px;
+        }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        #repoUrl {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #4a90e2;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .action-button {
+            padding: 10px 20px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            font-size: 16px;
+        }
+        .action-button:hover {
+            background: #357abd;
+        }
+        .action-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .controls-container {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        #fileListContainer {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .file-item:hover {
+            background-color: #f0f5ff;
+        }
+        .file-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        #codeDisplayContainer {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            background: #f5f5f5;
+            max-height: 60vh;
+            overflow: auto;
+        }
+        #codeDisplay {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+        }
+        #status {
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+            color: #555;
+        }
+        .file-header {
+            font-weight: bold;
+            color: #2563eb;
+            background-color: #e1edff;
+            padding: 5px 10px;
+            margin-top: 15px;
+            border-bottom: 1px solid #4a90e2;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>GitIngest v2</h1>
+        <div class="input-container">
+            <input type="text" id="repoUrl" placeholder="Enter GitHub URL (e.g., seenmttai/mystudentclub)">
+            <button id="fetchRepoButton" class="action-button">Fetch Files</button>
+        </div>
+
+        <div class="controls-container">
+            <button id="toggleAllButton" class="action-button" disabled>Toggle Select</button>
+            <button id="downloadButton" class="action-button" disabled>Download Selected</button>
+        </div>
+
+        <h3>Files in Repository:</h3>
+        <div id="fileListContainer">
+            <p>Enter a repository URL and click "Fetch Files" to see the file list.</p>
+        </div>
+
+        <h3>Selected File Content:</h3>
+        <div id="codeDisplayContainer">
+            <pre><code id="codeDisplay">Select files to see their content here.</code></pre>
+        </div>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const repoUrlInput = document.getElementById('repoUrl');
+        const fetchRepoButton = document.getElementById('fetchRepoButton');
+        const toggleAllButton = document.getElementById('toggleAllButton');
+        const downloadButton = document.getElementById('downloadButton');
+        const fileListContainer = document.getElementById('fileListContainer');
+        const codeDisplay = document.getElementById('codeDisplay');
+        const statusDiv = document.getElementById('status');
+
+        let allFiles = [];
+
+        fetchRepoButton.addEventListener('click', fetchAndPopulateFiles);
+        toggleAllButton.addEventListener('click', toggleAllSelection);
+        downloadButton.addEventListener('click', downloadSelectedFiles);
+
+        async function fetchAndPopulateFiles() {
+            let repoPath = repoUrlInput.value.trim();
+            if (!repoPath) {
+                alert('Please enter a repository URL or path.');
+                return;
+            }
+
+            try {
+                const url = new URL(repoPath);
+                if (url.hostname === 'github.com') {
+                    repoPath = url.pathname.substring(1);
+                }
+            } catch (e) {
+            }
+
+            const repoParts = repoPath.split('/').filter(p => p);
+            if (repoParts.length !== 2) {
+                alert('Invalid GitHub repository path. Please use the format "username/repository".');
+                return;
+            }
+            const [owner, repo] = repoParts;
+            
+            statusDiv.textContent = 'Fetching file list...';
+            setButtonsDisabled(true);
+
+            try {
+                const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/master?recursive=1`);
+                if (!response.ok) {
+                    throw new Error(`GitHub API error: ${response.statusText}`);
+                }
+                const data = await response.json();
+                
+                allFiles = data.tree.filter(item => item.type === 'blob').map(item => item.path);
+                
+                renderFileList();
+                statusDiv.textContent = `${allFiles.length} files found. Fetching content...`;
+                updateContent();
+            } catch (error) {
+                statusDiv.textContent = `Error: ${error.message}. Please check the repository path and your network connection.`;
+                fileListContainer.innerHTML = `<p>Could not fetch files.</p>`;
+                allFiles = [];
+                setButtonsDisabled(true);
+            }
+        }
+
+        function renderFileList() {
+            fileListContainer.innerHTML = '';
+            if (allFiles.length === 0) {
+                fileListContainer.innerHTML = '<p>No files found in this repository.</p>';
+                setButtonsDisabled(true);
+                return;
+            }
+
+            allFiles.forEach(filePath => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = filePath;
+                checkbox.checked = true;
+                checkbox.addEventListener('change', updateContent);
+
+                const label = document.createElement('label');
+                label.textContent = filePath;
+                label.style.cursor = 'pointer';
+                label.onclick = () => {
+                    checkbox.checked = !checkbox.checked;
+                    updateContent();
+                };
+                
+                fileItem.appendChild(checkbox);
+                fileItem.appendChild(label);
+                fileListContainer.appendChild(fileItem);
+            });
+            setButtonsDisabled(false);
+        }
+        
+        async function updateContent() {
+            const selectedCheckboxes = fileListContainer.querySelectorAll('input[type="checkbox"]:checked');
+            if (selectedCheckboxes.length === 0) {
+                codeDisplay.textContent = 'No files selected.';
+                statusDiv.textContent = 'Select files to view their content.';
+                return;
+            }
+
+            statusDiv.textContent = `Fetching content for ${selectedCheckboxes.length} selected file(s)...`;
+            codeDisplay.textContent = 'Loading...';
+
+            let combinedContent = '';
+            const repoPath = repoUrlInput.value.trim().replace('https://github.com/', '');
+            const [owner, repo] = repoPath.split('/');
+
+            const fetchPromises = Array.from(selectedCheckboxes).map(checkbox => {
+                const filePath = checkbox.value;
+                const fileUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@master/${filePath}`;
+                return fetch(fileUrl)
+                    .then(response => {
+                        if (!response.ok) return `/* Error fetching ${filePath}: ${response.statusText} */`;
+                        return response.text();
+                    })
+                    .then(text => {
+                        return `\n\n/* --- START OF FILE: ${filePath} --- */\n\n${text}\n\n/* --- END OF FILE: ${filePath} --- */`;
+                    })
+                    .catch(error => `/* Error fetching ${filePath}: ${error.message} */`);
+            });
+
+            const allFileContents = await Promise.all(fetchPromises);
+            combinedContent = allFileContents.join('');
+            
+            codeDisplay.textContent = combinedContent.trim();
+            statusDiv.textContent = `Displayed content for ${selectedCheckboxes.length} selected file(s).`;
+        }
+        
+        function toggleAllSelection() {
+            const checkboxes = fileListContainer.querySelectorAll('input[type="checkbox"]');
+            if (checkboxes.length === 0) return;
+
+            const isCurrentlyAllSelected = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(cb => {
+                cb.checked = !isCurrentlyAllSelected;
+            });
+
+            updateContent();
+        }
+
+        function downloadSelectedFiles() {
+            const content = codeDisplay.textContent;
+            if (!content || content === 'No files selected.' || content === 'Loading...') {
+                alert('No content to download.');
+                return;
+            }
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'gitingest-export.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            statusDiv.textContent = 'File downloaded successfully.';
+        }
+
+        function setButtonsDisabled(disabled) {
+            toggleAllButton.disabled = disabled;
+            downloadButton.disabled = disabled;
+        }
+
+    </script>
+</body>
+</html>
