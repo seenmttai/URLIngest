@@ -5,6 +5,7 @@
     <base href="urlingest.pages.dev" target="_blank">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js"></script>
     <script src="script.js"></script>
     <title>URLIngest - Web Content Aggregation</title>
 </head>
@@ -28,14 +29,54 @@
         <input type="number" id="patternCountInput" min="1" value="10" class="pattern-count-input">
         <button id="addPatternLinksButton" class="add-pattern-links-button">Add Pattern Links</button>
     </div>
-    <div class="button-container">
-        <div class="toggle-container">
-            <label class="switch">
-                <input type="checkbox" id="textOnlyToggle" checked>
-                <span class="slider round"></span>
+    <div class="scraping-mode-container">
+        <h3>Scraping Mode</h3>
+        <div class="mode-options">
+            <label class="mode-card active" data-mode="text">
+                <input type="radio" name="scrapingMode" value="text" checked style="display:none;">
+                <div class="mode-card-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </div>
+                <div class="mode-card-info">
+                    <span class="mode-card-title">Clean Text</span>
+                    <span class="mode-card-desc">Aggregated text with custom length and content filters</span>
+                </div>
             </label>
-            <span class="toggle-label">Text Only</span>
+            <label class="mode-card" data-mode="readability">
+                <input type="radio" name="scrapingMode" value="readability" style="display:none;">
+                <div class="mode-card-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                </div>
+                <div class="mode-card-info">
+                    <span class="mode-card-title">Readable Article (Mozilla Readability + LinkeDOM)</span>
+                    <span class="mode-card-desc">Pruned, elegant reader view using Firefox's core extraction engine</span>
+                </div>
+            </label>
+            <label class="mode-card" data-mode="source">
+                <input type="radio" name="scrapingMode" value="source" style="display:none;">
+                <div class="mode-card-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                </div>
+                <div class="mode-card-info">
+                    <span class="mode-card-title">Raw Source Code</span>
+                    <span class="mode-card-desc">Full HTML source layout with script and style tag filters</span>
+                </div>
+            </label>
         </div>
+    </div>
+    <div class="button-container">
         <button id="parseButton">Parse Links Content</button>
         <button id="deepParseButton">Deep Parse</button>
         <button id="copyAllButton" style="display: none;">Copy All Content</button>
@@ -90,7 +131,6 @@
         const copyAllButton = document.getElementById('copyAllButton');
         const stopParseButton = document.getElementById('stopParseButton');
         const textContent = document.getElementById('textContent');
-        const textOnlyToggle = document.getElementById('textOnlyToggle');
         const minWordFilter = document.getElementById('minWordFilter');
         const minLengthFilter = document.getElementById('minLengthFilter');
         const commonWordsFilter = document.getElementById('commonWordsFilter');
@@ -105,6 +145,31 @@
         let visitedUrls = new Set();
         let parsingStatus;
         let stopParsing = false;
+
+        // Scraping Mode Cards interactive setup
+        const modeCards = document.querySelectorAll('.mode-card');
+        let activeScrapingMode = 'text';
+
+        modeCards.forEach(card => {
+            card.addEventListener('click', () => {
+                modeCards.forEach(c => {
+                    c.classList.remove('active');
+                    c.querySelector('input[type="radio"]').checked = false;
+                });
+                card.classList.add('active');
+                const radio = card.querySelector('input[type="radio"]');
+                radio.checked = true;
+                activeScrapingMode = radio.value;
+                updateSettingsVisibility(activeScrapingMode);
+            });
+        });
+
+        function updateSettingsVisibility(mode) {
+            const filterSettings = document.querySelector('.filter-settings');
+            const sourceCodeSettings = document.querySelector('.source-code-settings');
+            filterSettings.style.display = (mode === 'text') ? 'block' : 'none';
+            sourceCodeSettings.style.display = (mode === 'source') ? 'block' : 'none';
+        }
 
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -243,8 +308,30 @@
         }
 
 
-        async function handleContent(url, html, isTextOnly, filterSettings, sourceCodeSettings) {
-            if (isTextOnly) {
+        async function handleContent(url, html, mode, filterSettings, sourceCodeSettings) {
+            if (mode === 'readability') {
+                try {
+                    const { parseHTML } = await import('https://cdn.jsdelivr.net/npm/linkedom@0.18.12/+esm');
+                    const { document } = parseHTML(html);
+                    const reader = new Readability(document);
+                    const article = reader.parse();
+                    if (!article) {
+                        return `<p><em>Could not extract readable article text using Mozilla Readability.</em></p>`;
+                    }
+
+                    const output = `
+                    <div class="readability-article">
+                        <h2>${article.title || 'Untitled Article'}</h2>
+                        ${article.byline ? `<p class="article-byline">By ${article.byline}</p>` : ''}
+                        ${article.excerpt ? `<p class="article-excerpt"><strong>Excerpt:</strong> ${article.excerpt}</p>` : ''}
+                        <div class="article-content-body">${article.content}</div>
+                    </div>`;
+                    return output;
+                } catch (e) {
+                    console.error("Readability parsing error:", e);
+                    return `<p>Error during Readability parsing: ${e.message}</p>`;
+                }
+            } else if (mode === 'text') {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 doc.querySelectorAll('script, style, nav, footer, header, .navigation, .menu, .sidebar').forEach(el => el.remove());
@@ -299,7 +386,6 @@
             textContent.style.display = 'block';
             copyAllButton.style.display = 'inline-block';
             const status = createParsingStatus();
-            const isTextOnly = textOnlyToggle.checked;
             const filterSettings = {
                 minWordFilter: minWordFilter.checked,
                 minLengthFilter: minLengthFilter.checked,
@@ -325,15 +411,16 @@
 
                 try {
                     const html = await fetchWithCORSBypass(url);
-                    const content = await handleContent(url, html, isTextOnly, filterSettings, sourceCodeSettings);
+                    const content = await handleContent(url, html, activeScrapingMode, filterSettings, sourceCodeSettings);
 
+                    const contentClass = activeScrapingMode === 'text' ? 'markdown-content' : (activeScrapingMode === 'readability' ? 'readability-content' : 'parsed-content');
                     const contentSection = `
                     <div class="content-section">
                         <h3>${url}</h3>
                         <div class="content-actions">
                             <button class="action-button copy-content-button" onclick="copyContent(this)">Copy Content</button>
                         </div>
-                        <div class="${isTextOnly ? 'markdown-content' : 'parsed-content'}">${content}</div>
+                        <div class="${contentClass}">${content}</div>
                     </div>`;
                     allContent.push(contentSection);
 
@@ -370,7 +457,6 @@
             textContent.innerHTML = 'Parsing content...';
             textContent.classList.add('loading');
 
-            const isTextOnly = textOnlyToggle.checked;
             const filterSettings = {
                 minWordFilter: minWordFilter.checked,
                 minLengthFilter: minLengthFilter.checked,
@@ -390,15 +476,16 @@
                 }
                 try {
                     const html = await fetchWithCORSBypass(url);
-                    const content = await handleContent(url, html, isTextOnly, filterSettings, sourceCodeSettings);
+                    const content = await handleContent(url, html, activeScrapingMode, filterSettings, sourceCodeSettings);
 
+                    const contentClass = activeScrapingMode === 'text' ? 'markdown-content' : (activeScrapingMode === 'readability' ? 'readability-content' : 'parsed-content');
                     const contentSection = `
                     <div class="content-section">
                         <h3>${url}</h3>
                         <div class="content-actions">
                             <button class="action-button copy-content-button" onclick="copyContent(this)">Copy Content</button>
                         </div>
-                        <div class="${isTextOnly ? 'markdown-content' : 'parsed-content'}">${content}</div>
+                        <div class="${contentClass}">${content}</div>
                     </div>`;
                     allContent.push(contentSection);
                 } catch (error) {
@@ -414,10 +501,19 @@
             const allContent = Array.from(textContent.querySelectorAll('.content-section'))
                 .map(section => {
                     const titleElement = section.querySelector('h3');
-                    const contentElement = section.querySelector('.markdown-content, .parsed-content');
+                    const contentElement = section.querySelector('.markdown-content, .parsed-content, .readability-content');
 
                     const title = titleElement ? titleElement.textContent : '';
-                    const content = contentElement ? (textOnlyToggle.checked ? contentElement.textContent : contentElement.innerHTML) : '';
+                    let content = '';
+                    if (contentElement) {
+                        if (activeScrapingMode === 'text') {
+                            content = contentElement.textContent;
+                        } else if (activeScrapingMode === 'readability') {
+                            content = contentElement.innerText || contentElement.textContent;
+                        } else {
+                            content = contentElement.textContent || contentElement.innerText;
+                        }
+                    }
                     return `${title}\n\n${content}\n\n`;
                 })
                 .join('---\n\n');
@@ -441,9 +537,16 @@
 
         window.copyContent = function (button) {
             const contentSection = button.closest('.content-section');
-            const contentElement = contentSection.querySelector('.markdown-content') || contentSection.querySelector('.parsed-content');
+            const contentElement = contentSection.querySelector('.markdown-content') || contentSection.querySelector('.parsed-content') || contentSection.querySelector('.readability-content');
             if (contentElement) {
-                const content = textOnlyToggle.checked ? contentElement.textContent : contentElement.innerHTML;
+                let content = '';
+                if (activeScrapingMode === 'text') {
+                    content = contentElement.textContent;
+                } else if (activeScrapingMode === 'readability') {
+                    content = contentElement.innerText || contentElement.textContent;
+                } else {
+                    content = contentElement.textContent || contentElement.innerText;
+                }
                 navigator.clipboard.writeText(content).then(() => {
                     button.textContent = 'Copied!';
                     setTimeout(() => {
@@ -453,18 +556,8 @@
             }
         };
 
-        textOnlyToggle.addEventListener('change', function () {
-            const filterSettings = document.querySelector('.filter-settings');
-            const sourceCodeSettings = document.querySelector('.source-code-settings');
-            filterSettings.style.display = this.checked ? 'block' : 'none';
-            sourceCodeSettings.style.display = this.checked ? 'none' : 'block';
-        });
-
         document.addEventListener('DOMContentLoaded', () => {
-            const filterSettings = document.querySelector('.filter-settings');
-            const sourceCodeSettings = document.querySelector('.source-code-settings');
-            filterSettings.style.display = textOnlyToggle.checked ? 'block' : 'none';
-            sourceCodeSettings.style.display = textOnlyToggle.checked ? 'none' : 'block';
+            updateSettingsVisibility(activeScrapingMode);
         });
     </script>
 </body>
