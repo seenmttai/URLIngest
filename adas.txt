@@ -123,9 +123,10 @@ Quick table for the rest (code below):
   SN 16   Rabin-Karp                        Rolling hash         avg O(n + m), worst O(nm)
 
 For each experiment: technique, time complexity, how it works, pseudocode, C
-program and a sample run. All programs below are C, compiled with gcc and run
-on the sample input shown. TSP, Hamiltonian and Assignment were also checked
-against brute force on 150 random inputs each (all matched).
+program, a sample run and viva questions with answers. All programs below are
+C, compiled with gcc and run on the sample input shown. TSP, Hamiltonian and
+Assignment were also checked against brute force on 150 random inputs each
+(all matched).
 
 ------------------------------------------------------------------------------
 EXPERIMENT 1: Recursive Binary Search + time taken vs n (with graph)
@@ -239,15 +240,63 @@ Enter element to search: 23
 Element found at position 6
 
          n     total time (s)      per search (us)
-      1000           0.127932               0.1279
-      5000           0.155161               0.1552
-     10000           0.168116               0.1681
-     50000           0.204115               0.2041
-    100000           0.236875               0.2369
-    500000           0.370126               0.3701
-   1000000           0.530298               0.5303
+      1000           0.118996               0.1190
+      5000           0.145067               0.1451
+     10000           0.155212               0.1552
+     50000           0.189413               0.1894
+    100000           0.216866               0.2169
+    500000           0.360767               0.3608
+   1000000           0.550883               0.5509
 
 Plot n (x-axis) against time per search (y-axis): the curve is log n.
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. What is the condition for using binary search?
+A:  The array must be sorted. It also needs random access (an array), so it is
+    not used on a linked list.
+
+Q2. What is the time complexity of binary search?
+A:  Best case O(1) (key at the middle). Average and worst case O(log n).
+
+Q3. Why log n?
+A:  Every step halves the range: n, n/2, n/4, ... 1. After k steps n/2^k = 1,
+    so k = log2 n.
+
+Q4. Write its recurrence.
+A:  T(n) = T(n/2) + c, which gives O(log n) (master theorem with a = 1, b = 2,
+    case 2).
+
+Q5. Space complexity of recursive vs iterative binary search?
+A:  Recursive: O(log n) for the recursion stack. Iterative: O(1).
+
+Q6. Which technique is binary search?
+A:  Divide and conquer (more exactly decrease and conquer): the problem is
+    split in half and only one half is solved.
+
+Q7. Maximum number of comparisons for n = 1000?
+A:  floor(log2 1000) + 1 = 9 + 1 = 10.
+
+Q8. Why can mid = (low + high) / 2 be a problem?
+A:  For very large indices low + high can overflow an int. Safer: mid = low +
+    (high - low) / 2.
+
+Q9. Why do you repeat the search many times when timing it?
+A:  One search takes well under a microsecond, less than clock()'s resolution,
+    so a single measurement shows 0. Timing many searches and dividing gives
+    the average time per search.
+
+Q10. What do clock() and CLOCKS_PER_SEC do?
+A:  clock() (in <time.h>) returns the processor time used so far in ticks.
+    (end - start) / CLOCKS_PER_SEC converts ticks to seconds.
+
+Q11. What shape does the time vs n graph have?
+A:  Logarithmic: it rises very slowly. Doubling n adds only one more
+    comparison.
+
+Q12. Linear search vs binary search?
+A:  Linear: O(n), works on unsorted data and linked lists. Binary: O(log n),
+    needs sorted data with random access.
 
 
 ------------------------------------------------------------------------------
@@ -366,14 +415,58 @@ Enter 7 elements:
 Sorted array: 10 30 40 50 70 80 90 
 
          n        time (s)
-      1000        0.000122
-      5000        0.000863
-     10000        0.002123
-     50000        0.012877
-    100000        0.016416
-    500000        0.085442
+      1000        0.000424
+      5000        0.003067
+     10000        0.005169
+     50000        0.014010
+    100000        0.014595
+    500000        0.079048
 
 Plot n (x-axis) against time (y-axis): the curve is n log n.
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. Who invented quick sort?
+A:  Tony (C.A.R.) Hoare, around 1960.
+
+Q2. Which technique does quick sort use?
+A:  Divide and conquer. Divide = partition around a pivot; conquer = sort both
+    parts recursively; combine = nothing to do (the array is sorted in place).
+
+Q3. Time complexity of quick sort?
+A:  Best and average O(n log n); worst O(n^2).
+
+Q4. When does the worst case happen?
+A:  When the pivot is always the smallest or largest element, e.g. an already
+    sorted or reverse sorted array with the first or last element as pivot.
+    One side gets n - 1 elements: T(n) = T(n - 1) + n = O(n^2).
+
+Q5. Recurrence for the best case?
+A:  T(n) = 2T(n/2) + n = O(n log n) (the pivot splits the array in half).
+
+Q6. How can the worst case be avoided?
+A:  Choose a random pivot, or the median of first, middle and last elements.
+
+Q7. Is quick sort stable? Is it in-place?
+A:  Not stable (swaps can change the order of equal elements). In-place: only
+    O(log n) recursion stack on average, O(n) worst.
+
+Q8. Which partition scheme does this program use?
+A:  Lomuto partition: last element as pivot, one index i marks the end of the
+    "smaller than pivot" zone. Hoare's scheme uses two indices moving towards
+    each other.
+
+Q9. Quick sort vs merge sort?
+A:  Merge sort: always O(n log n), stable, but needs O(n) extra space. Quick
+    sort: in-place and usually faster in practice, but O(n^2) in the worst
+    case.
+
+Q10. What does srand(time(NULL)) do?
+A:  It seeds the random number generator with the current time, so every run
+    fills the array with different numbers.
+
+Q11. What shape does the time vs n graph have?
+A:  n log n: almost a straight line that bends slightly upward.
 
 
 ------------------------------------------------------------------------------
@@ -482,6 +575,50 @@ Enter start vertex: 0
 
 BFS - nodes reachable from 0: 0 1 2 3 4 
 DFS - nodes reachable from 0: 0 1 3 4 2
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. Which data structure do BFS and DFS use?
+A:  BFS uses a queue. DFS uses a stack (or recursion, which uses the call
+    stack).
+
+Q2. Time complexity of BFS and DFS?
+A:  O(V^2) with an adjacency matrix; O(V + E) with an adjacency list.
+
+Q3. Why is the visited[] array needed?
+A:  So that no vertex is processed twice; without it a cycle would make the
+    program loop forever.
+
+Q4. Which traversal finds the shortest path in an unweighted graph?
+A:  BFS, because it visits vertices in order of the number of edges from the
+    start.
+
+Q5. Applications of BFS?
+A:  Shortest path in unweighted graphs, level-order traversal, checking if a
+    graph is bipartite, finding connected components, web crawlers.
+
+Q6. Applications of DFS?
+A:  Topological sorting, cycle detection, strongly connected components, path
+    finding, maze solving.
+
+Q7. What is a digraph? How is it stored here?
+A:  A directed graph: an edge i -> j does not mean j -> i. adj[i][j] = 1
+    stores the edge i -> j.
+
+Q8. How do you find the nodes reachable from a start node?
+A:  Run BFS or DFS from that node. Every vertex it visits is reachable; the
+    rest are not (vertex 5 in the sample).
+
+Q9. Adjacency matrix vs adjacency list?
+A:  Matrix: O(V^2) space, O(1) to test an edge, good for dense graphs. List:
+    O(V + E) space, good for sparse graphs.
+
+Q10. Is the BFS / DFS order unique?
+A:  No. It depends on the order in which neighbours are checked.
+
+Q11. How are strongly connected components found?
+A:  Kosaraju: DFS to get finish times, reverse all edges, then DFS in
+    decreasing finish time. Each DFS tree is one SCC. O(V + E).
 
 
 ------------------------------------------------------------------------------
@@ -686,6 +823,56 @@ Edge   Cost
 0 - 3   6
 Total cost of MST = 16
 
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. What is a spanning tree?
+A:  A subgraph that connects all V vertices with no cycle. It always has
+    exactly V - 1 edges.
+
+Q2. What is a minimum cost spanning tree (MST)?
+A:  The spanning tree whose total edge cost is the smallest.
+
+Q3. Which technique do Prim and Kruskal use?
+A:  Greedy: both add the cheapest safe edge at each step.
+
+Q4. Difference between Prim's and Kruskal's algorithms?
+A:  Prim grows one tree from a start vertex, adding the cheapest edge from the
+    tree to a new vertex. Kruskal sorts all edges and adds the cheapest edge
+    that makes no cycle, joining a forest of trees. Prim suits dense graphs,
+    Kruskal sparse ones.
+
+Q5. Time complexity?
+A:  Prim: O(V^2) with a matrix, O(E log V) with a binary heap. Kruskal: O(E
+    log E) = O(E log V), dominated by sorting.
+
+Q6. How does Kruskal detect a cycle?
+A:  With union-find (disjoint sets). If both ends of an edge have the same
+    root (same set), adding it would make a cycle.
+
+Q7. Is the MST unique?
+A:  It is unique if all edge weights are different. With equal weights there
+    may be several MSTs with the same total cost.
+
+Q8. Why is the greedy choice correct?
+A:  Cut property: for any cut of the graph, the cheapest edge crossing it
+    belongs to some MST.
+
+Q9. Do Prim and Kruskal work with negative edge weights?
+A:  Yes. Unlike Dijkstra, MST algorithms have no problem with negative
+    weights.
+
+Q10. Can you find an MST of a directed graph with these?
+A:  No. They are for undirected connected graphs (the directed version is a
+    minimum arborescence).
+
+Q11. What if the graph is not connected?
+A:  There is no spanning tree, only a minimum spanning forest. The programs
+    print "Graph is not connected".
+
+Q12. Prim vs Dijkstra?
+A:  Same structure, different key: Prim's key is the single edge cost to the
+    tree; Dijkstra's key is the total distance from the source.
+
 
 ------------------------------------------------------------------------------
 EXPERIMENT 9: 0/1 Knapsack using Backtracking
@@ -816,6 +1003,53 @@ Items taken (after sorting by p/w):
   item 1 (p = 10, w = 5)
   item 2 (p = 5, w = 3)
 Nodes visited = 5
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. What is backtracking?
+A:  Building a solution one decision at a time (DFS over the state-space tree)
+    and abandoning a branch as soon as it cannot lead to a valid or better
+    solution.
+
+Q2. What does the state-space tree look like for 0/1 knapsack?
+A:  Level k decides item k: left child = take it (x[k] = 1), right child =
+    leave it (x[k] = 0). It has 2^n leaves.
+
+Q3. What is the bounding function?
+A:  An upper bound on the profit reachable from a node: current profit +
+    greedy fractional filling of the remaining capacity. If the bound is not
+    more than the best profit found so far, the branch is pruned.
+
+Q4. Why are the items sorted by profit/weight first?
+A:  It makes the fractional bound tight and finds good solutions early, so
+    more branches get pruned.
+
+Q5. Time complexity?
+A:  Worst case O(2^n) nodes, O(n) bound at each node, so O(n * 2^n). Usually
+    far fewer nodes.
+
+Q6. What is the feasibility check?
+A:  Take item k only if cw + w[k] <= M.
+
+Q7. Why does greedy fail for 0/1 knapsack?
+A:  Items cannot be split. Example: M = 50, items (p, w) = (60, 10), (100,
+    20), (120, 30). Greedy by ratio takes the first two = 160; the best is the
+    last two = 220.
+
+Q8. Backtracking vs dynamic programming for 0/1 knapsack?
+A:  DP is O(nW): fast when the capacity W is small. Backtracking is O(2^n) in
+    the worst case, but does not depend on W and works with real-number
+    weights.
+
+Q9. Backtracking vs branch and bound?
+A:  Backtracking does DFS and prunes with feasibility or bound checks. Branch
+    and bound is for optimisation: it generates all children of a node and
+    picks the next node by FIFO, LIFO or least cost, killing nodes with
+    bounds.
+
+Q10. Is 0/1 knapsack NP-complete?
+A:  The decision version is NP-complete. The O(nW) DP is pseudo-polynomial,
+    not polynomial.
 
 
 ------------------------------------------------------------------------------
@@ -1007,6 +1241,56 @@ Minimum tour cost = 28
 Tour: 1 -> 4 -> 2 -> 5 -> 3 -> 1
 Nodes expanded = 11
 
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. What is the travelling salesman problem?
+A:  Find the cheapest tour that visits every city exactly once and returns to
+    the starting city.
+
+Q2. Why use branch and bound?
+A:  To avoid checking all (n - 1)! tours: lower bounds let whole subtrees be
+    killed.
+
+Q3. What is a reduced cost matrix?
+A:  A matrix in which every row and every column has at least one 0 (or is all
+    INF), made by subtracting row minima, then column minima.
+
+Q4. Why is the reduction amount a lower bound?
+A:  Every tour uses exactly one entry from each row and each column.
+    Subtracting a constant from a row (or column) lowers every tour by that
+    constant, so the total subtracted is at most the cost of any tour.
+
+Q5. Formula for the cost of a child node?
+A:  c(child) = c(parent) + R[i][j] + r: parent cost + reduced cost of edge (i,
+    j) + reduction of the new matrix.
+
+Q6. Why set row i and column j to INF?
+A:  City i has been left and city j has been entered; each happens only once
+    in a tour.
+
+Q7. Why set M[j][1] to INF?
+A:  So the path cannot return to the start city before visiting all cities.
+
+Q8. What are live node, E-node and dead node?
+A:  Live: generated but not yet expanded. E-node: the node being expanded now.
+    Dead: killed by the bound or fully expanded.
+
+Q9. LC vs FIFO vs LIFO branch and bound?
+A:  They differ in the next E-node: LC takes the least-cost live node, FIFO a
+    queue, LIFO a stack.
+
+Q10. Time complexity?
+A:  Worst case O(n!) nodes with O(n^2) work each, i.e. exponential; TSP is NP-
+    hard.
+
+Q11. Answer for the slides example?
+A:  Root cost 25; optimal tour 1 -> 4 -> 2 -> 5 -> 3 -> 1 with cost 28.
+
+Q12. Other ways to solve TSP?
+A:  Brute force O(n!); dynamic programming (Held-Karp) O(n^2 * 2^n); nearest-
+    neighbour greedy O(n^2) (approximate); MST-based 2-approximation for
+    metric TSP.
+
 
 ------------------------------------------------------------------------------
 OPEN-ENDED 1 (SN 11): Hamiltonian cycle, and TSP using the Hamiltonian cycle approach
@@ -1138,6 +1422,50 @@ Cycle 8: 1 -> 5 -> 4 -> 3 -> 2 -> 1   cost = 22
 TSP answer (cheapest Hamiltonian cycle): 1 -> 2 -> 3 -> 5 -> 4 -> 1
 Minimum cost = 13
 
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. What are a Hamiltonian path and a Hamiltonian cycle?
+A:  Path: visits every vertex exactly once. Cycle: a Hamiltonian path with an
+    edge from the last vertex back to the first.
+
+Q2. Hamiltonian cycle vs Euler circuit?
+A:  Hamiltonian: every vertex once. Euler: every edge once. Euler is easy
+    (connected and all degrees even); Hamiltonian is NP-complete.
+
+Q3. How does the backtracking work?
+A:  Fix vertex 1 first, then fill positions one by one with a vertex that is
+    adjacent to the previous one and not used yet. At a dead end, undo the
+    last choice (backtrack).
+
+Q4. What does isSafe check?
+A:  That v is adjacent to the previous vertex in the path, and that v is not
+    already in the path.
+
+Q5. Time complexity?
+A:  O(n!) in the worst case: (n - 1)! orderings, O(n) check each.
+
+Q6. How does it solve TSP?
+A:  Every TSP tour is a Hamiltonian cycle. Generate all Hamiltonian cycles,
+    compute each cost, and take the cheapest.
+
+Q7. Why fix the first vertex?
+A:  A cycle can start anywhere; fixing the start avoids listing the same cycle
+    n times.
+
+Q8. Why does each cycle appear twice?
+A:  In an undirected graph the same cycle is found in both directions.
+
+Q9. Is Hamiltonian cycle NP-complete?
+A:  Yes (it is one of Karp's 21 problems). TSP's decision version is NP-
+    complete through a reduction from it.
+
+Q10. When is a Hamiltonian cycle guaranteed?
+A:  Dirac's theorem: n >= 3 and every vertex has degree >= n/2. Ore's theorem:
+    deg(u) + deg(v) >= n for every pair of non-adjacent vertices.
+
+Q11. How many Hamiltonian cycles does a complete graph K_n have?
+A:  (n - 1)! / 2 distinct cycles (for n >= 3).
+
 
 ------------------------------------------------------------------------------
 OPEN-ENDED 4 (SN 14): Assignment problem (n agents, n tasks, minimum total cost)
@@ -1252,6 +1580,49 @@ Optimal assignment:
   Agent 4 -> Task 4   cost 4
 Minimum total cost = 13
 Nodes explored = 9
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. What is the assignment problem?
+A:  n agents and n tasks with a cost for each pair. Give each agent exactly
+    one task (one-to-one) so that the total cost is minimum.
+
+Q2. How many possible assignments are there?
+A:  n! (every permutation of the tasks).
+
+Q3. What lower bound is used?
+A:  Cost so far + for each agent not yet assigned, the cheapest task that is
+    still free.
+
+Q4. Why is that bound valid?
+A:  Every remaining agent must get some free task, which costs at least its
+    cheapest free task.
+
+Q5. Time complexity?
+A:  Worst case O(n!) (exponential); pruning usually cuts it a lot. The
+    Hungarian method solves it exactly in O(n^3).
+
+Q6. How does the Hungarian method work?
+A:  Subtract row minima, then column minima. Cover all zeros with the fewest
+    lines. If n lines are needed, an optimal assignment exists among the
+    zeros; otherwise subtract the smallest uncovered number from uncovered
+    entries, add it at intersections, and repeat.
+
+Q7. Can greedy solve it?
+A:  No. Giving each agent its cheapest free task in order can be far from
+    optimal.
+
+Q8. Answer for the sample?
+A:  Agent 1 -> Task 2, Agent 2 -> Task 1, Agent 3 -> Task 3, Agent 4 -> Task
+    4. Total cost 13.
+
+Q9. What if the numbers of agents and tasks differ?
+A:  Add dummy agents or tasks with cost 0 to make the matrix square
+    (balanced).
+
+Q10. How do you maximise profit instead?
+A:  Subtract every entry from the largest entry (or negate the costs) and
+    minimise.
 
 
 ------------------------------------------------------------------------------
@@ -1372,6 +1743,49 @@ Optimal BST:
   "to" is the right child of "is"
   "the" is the left child of "to"
   "of" is the left child of "the"
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. What is a binary search tree?
+A:  A binary tree where every key in the left subtree is smaller than the node
+    and every key in the right subtree is larger.
+
+Q2. What is an optimal BST?
+A:  The BST with the minimum expected search cost for given search
+    probabilities: frequent words near the root, rare ones deeper.
+
+Q3. Why dynamic programming?
+A:  Optimal substructure: the subtrees of an optimal BST are optimal for their
+    key ranges. Overlapping subproblems: the same ranges i..j are needed again
+    and again.
+
+Q4. Write the recurrence.
+A:  e[i][j] = min over i <= r <= j of ( e[i][r-1] + e[r+1][j] + w[i][j] ),
+    with e[i][i-1] = q[i-1].
+
+Q5. What is w[i][j] and why is it added?
+A:  w[i][j] = p[i] + ... + p[j] + q[i-1] + ... + q[j]. When a subtree goes one
+    level deeper under a root, every search in it costs one more comparison.
+
+Q6. What are the q values (dummy keys)?
+A:  Probabilities of unsuccessful searches: searching for a word that is not
+    in the dictionary and falls between two keys.
+
+Q7. Time and space complexity?
+A:  O(n^3) time and O(n^2) space. Knuth's optimisation (root[i][j-1] <=
+    root[i][j] <= root[i+1][j]) gives O(n^2).
+
+Q8. Why not just put the most frequent word at the root (greedy)?
+A:  That does not always give the minimum expected cost; DP checks every
+    possible root.
+
+Q9. How many different BSTs can n keys form?
+A:  The Catalan number C(n) = (2n)! / ((n + 1)! n!), which grows
+    exponentially, so brute force is impossible.
+
+Q10. Answer for the sample?
+A:  Expected cost 2.75 with "is" (key 2) as the root. This is the CLRS
+    textbook example.
 
 
 ------------------------------------------------------------------------------
@@ -1568,6 +1982,309 @@ KMP        matches at: 0 9 12  (3 found)
 Rabin-Karp matches at: 0 9 12  (3 found)
 
  text size        Naive          KMP   Rabin-Karp   (seconds, pattern length 100)
-     10000     0.010151     0.000208     0.000275   matches 10 10 10
-    100000     0.032788     0.000667     0.000891   matches 100 100 100
-   1000000     0.253905     0.006679     0.008878   matches 1000 1000 1000
+     10000     0.003219     0.000081     0.000106   matches 10 10 10
+    100000     0.035616     0.000627     0.000823   matches 100 100 100
+   1000000     0.235999     0.006312     0.008334   matches 1000 1000 1000
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. Time complexity of naive string matching?
+A:  O((n - m + 1) * m) = O(nm) in the worst case, e.g. text "aaaa...a" and
+    pattern "aa...ab". Best case O(n).
+
+Q2. Time complexity of KMP?
+A:  O(n + m): O(m) to build the LPS table plus O(n) to scan the text. The text
+    pointer never moves back.
+
+Q3. What is the LPS (prefix function) array?
+A:  lps[i] = length of the longest proper prefix of P[0..i] that is also a
+    suffix of it. Example: "AABAACAABAA" gives 0 1 0 1 2 0 1 2 3 4 5.
+
+Q4. How does KMP avoid re-checking characters?
+A:  After a mismatch at pattern position j, it continues from j = lps[j - 1]
+    because that much of the pattern is already known to match.
+
+Q5. Time complexity of Rabin-Karp?
+A:  Average O(n + m); worst O(nm) when many windows have the same hash as the
+    pattern.
+
+Q6. What is a spurious hit?
+A:  The window's hash equals the pattern's hash but the characters differ.
+    That is why characters are checked after a hash match.
+
+Q7. How is the rolling hash updated?
+A:  t = (d * (t - T[s] * h) + T[s + m]) mod q, where h = d^(m-1) mod q. It
+    costs O(1) per shift.
+
+Q8. Why take the hash mod a prime q?
+A:  It keeps the numbers small and spreads hash values evenly, so there are
+    fewer collisions.
+
+Q9. Which algorithm would you recommend for plagiarism detection?
+A:  For one pattern, KMP (guaranteed linear time). To compare many phrases at
+    once, Rabin-Karp: hash all k-word windows of both documents and compare
+    the hashes (fingerprinting, as tools like MOSS do). Naive only for small
+    inputs.
+
+Q10. Space complexity?
+A:  Naive O(1), KMP O(m) for the LPS array, Rabin-Karp O(1).
+
+Q11. Who designed KMP and Rabin-Karp?
+A:  KMP: Knuth, Morris and Pratt (1977). Rabin-Karp: Michael Rabin and Richard
+    Karp (1987).
+
+Q12. Other string matching algorithms?
+A:  Boyer-Moore (skips ahead, very fast in practice), Aho-Corasick (many
+    patterns at once), Z-algorithm.
+
+
+
+==============================================================================
+PART 3: VIVA QUESTIONS FOR THE EXPERIMENTS ALREADY IN THE LAB FILE
+==============================================================================
+The code for these is in the class lab file (program numbers given). Questions
+and answers below.
+
+------------------------------------------------------------------------------
+EXPERIMENT 3: Knapsack problem using the greedy approach (fractional knapsack)
+[lab file Program 6]
+------------------------------------------------------------------------------
+Time complexity: O(n log n) for sorting by profit/weight; the filling loop is
+O(n).
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. What is the greedy choice?
+A:  Take items in decreasing order of profit/weight. Take whole items while
+    they fit, then a fraction of the next one.
+
+Q2. Why does greedy give the optimal answer here?
+A:  Items can be split, so the capacity can always be filled with the best
+    ratios available. Each unit of weight carries the highest possible profit.
+
+Q3. Why does greedy not work for 0/1 knapsack?
+A:  A high-ratio item can leave wasted capacity that cannot be filled. M = 50,
+    (60, 10), (100, 20), (120, 30): greedy 160, optimal 220.
+
+Q4. Work out the example M = 50, (60, 10), (100, 20), (120, 30).
+A:  Ratios 6, 5, 4. Take items 1 and 2 whole (profit 160, weight 30), then
+    20/30 of item 3 (profit 80). Total 240.
+
+Q5. How many items can be fractional in the optimal solution?
+A:  At most one: the last item taken.
+
+Q6. Why sort by ratio, not by profit or by weight?
+A:  Highest profit first can fill the bag with heavy items; lightest first can
+    pick worthless items. Only the ratio is always optimal.
+
+Q7. What two properties make a greedy algorithm correct?
+A:  Greedy choice property (a locally best choice is part of an optimal
+    solution) and optimal substructure.
+
+Q8. Fractional vs 0/1 knapsack methods?
+A:  Fractional: greedy. 0/1: dynamic programming, backtracking or branch and
+    bound.
+
+
+------------------------------------------------------------------------------
+EXPERIMENT 4: 0/1 Knapsack using dynamic programming  [lab file Program 9]
+------------------------------------------------------------------------------
+Time complexity: O(nW) time and space (n items, capacity W); pseudo-
+polynomial.
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. Write the recurrence.
+A:  K[i][w] = K[i-1][w] if w[i] > w; otherwise K[i][w] = max( K[i-1][w], p[i]
+    + K[i-1][w - w[i]] ).
+
+Q2. What are the base cases?
+A:  K[0][w] = 0 (no items) and K[i][0] = 0 (no capacity).
+
+Q3. Why is it called pseudo-polynomial?
+A:  O(nW) depends on the value of W, not on the number of bits needed to write
+    W. A huge W makes it slow.
+
+Q4. How do you find which items were taken?
+A:  Trace back from K[n][W]: if K[i][w] != K[i-1][w], item i was taken, so set
+    w = w - w[i]. Then go to row i - 1.
+
+Q5. How can the space be reduced?
+A:  Use one array of size W + 1 and loop w from W down to w[i]: O(W) space.
+
+Q6. Why is dynamic programming used?
+A:  Optimal substructure plus overlapping subproblems: the same (item,
+    capacity) pairs repeat, so each answer is stored once.
+
+Q7. Answer for M = 50, (60, 10), (100, 20), (120, 30)?
+A:  220, by taking items 2 and 3.
+
+Q8. DP vs divide and conquer?
+A:  Both split into subproblems. DP subproblems overlap, so results are stored
+    in a table; D&C subproblems are independent.
+
+Q9. Is 0/1 knapsack NP-complete?
+A:  Its decision version is NP-complete. The DP does not contradict this
+    because it is pseudo-polynomial.
+
+
+------------------------------------------------------------------------------
+EXPERIMENT 7 and SN 13: Dijkstra's shortest paths (road network)  [lab file
+Program 7]
+------------------------------------------------------------------------------
+Time complexity: O(V^2) with an adjacency matrix; O((V + E) log V) with a
+binary heap.
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. What does Dijkstra find?
+A:  Shortest distances from one source vertex to every other vertex, in a
+    graph with non-negative edge weights.
+
+Q2. Which technique is it?
+A:  Greedy: each step finalises the unvisited vertex with the smallest
+    distance, then relaxes its edges.
+
+Q3. What is relaxation?
+A:  If d[u] + w(u, v) < d[v], then set d[v] = d[u] + w(u, v) and parent[v] =
+    u.
+
+Q4. Why does Dijkstra fail with negative edges?
+A:  A vertex is final once picked. A negative edge found later could give it a
+    shorter path, which Dijkstra never revisits. Use Bellman-Ford, O(VE).
+
+Q5. How do you print the actual path?
+A:  Store parent[v] during relaxation, then follow parents from the
+    destination back to the source.
+
+Q6. Dijkstra vs Floyd-Warshall?
+A:  Dijkstra: single source, O(V^2). Floyd-Warshall: all pairs, O(V^3), and it
+    allows negative edges (but not negative cycles).
+
+Q7. Dijkstra vs Prim?
+A:  Same structure; Dijkstra's key is the total distance from the source,
+    Prim's key is the one edge to the tree.
+
+Q8. How does SN 13 (road network) map to this?
+A:  Junctions = vertices, road segments = edges, weight = length, time or cost
+    (all positive), one-way streets = directed edges. So Dijkstra applies
+    directly.
+
+Q9. What do real map apps add?
+A:  A* search (a distance estimate to the goal) and contraction hierarchies,
+    which make important roads (highways) shortcuts. That is the "some edges
+    are more important" idea.
+
+Q10. Why is INF used, and what is the risk?
+A:  INF marks "not reached yet". Choose it so INF + weight does not overflow
+    an int (e.g. 9999 for small graphs).
+
+
+------------------------------------------------------------------------------
+EXPERIMENT 8: N-Queens using backtracking  [lab file Program 11]
+------------------------------------------------------------------------------
+Time complexity: O(N!) in the worst case.
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. State the problem.
+A:  Place N queens on an N x N board so that no two share a row, column or
+    diagonal.
+
+Q2. How does backtracking solve it?
+A:  Place one queen per row. Try each column; if it is safe, go to the next
+    row. If no column works, go back and move the previous queen.
+
+Q3. Write the safety check.
+A:  For every earlier row k: x[k] == col (same column) or abs(x[k] - col) ==
+    abs(k - row) (same diagonal) means unsafe.
+
+Q4. Why one queen per row?
+A:  Two queens in one row would attack each other, so the row is fixed by the
+    level of the tree and only the column is chosen.
+
+Q5. How many solutions are there?
+A:  4-queens: 2, (2, 4, 1, 3) and (3, 1, 4, 2). 8-queens: 92 (12 distinct up
+    to rotation and reflection). N = 2 and N = 3: none.
+
+Q6. What is the state-space tree?
+A:  Level = row, each branch = a column for that row's queen. Unsafe branches
+    are pruned immediately.
+
+Q7. Why not brute force?
+A:  There are C(64, 8), about 4.4 billion, ways to place 8 queens.
+    Backtracking rejects a partial board as soon as two queens attack.
+
+Q8. Explicit vs implicit constraints?
+A:  Explicit: x[i] is in {1..N}. Implicit: no two queens attack each other.
+
+
+------------------------------------------------------------------------------
+SN 12 (open-ended 2): Longest Common Subsequence using DP  [lab file Program 8
+/ OE 2]
+------------------------------------------------------------------------------
+Time complexity: O(mn) time and space (m, n = string lengths).
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. Subsequence vs substring?
+A:  A subsequence keeps the order but need not be contiguous; a substring must
+    be contiguous.
+
+Q2. Write the recurrence.
+A:  c[i][j] = c[i-1][j-1] + 1 if X[i] = Y[j]; otherwise max(c[i-1][j],
+    c[i][j-1]). c[0][j] = c[i][0] = 0.
+
+Q3. How do you print the LCS itself?
+A:  Start at c[m][n]. If the characters match, record it and go diagonally up-
+    left; otherwise move to the larger of up and left.
+
+Q4. Brute force complexity?
+A:  O(n * 2^m): a string of length m has 2^m subsequences.
+
+Q5. Can the space be reduced?
+A:  For the length only, keep two rows: O(min(m, n)). The full table is needed
+    to print the sequence.
+
+Q6. Applications?
+A:  diff / file comparison, version control, DNA sequence alignment
+    (bioinformatics), plagiarism detection.
+
+Q7. Is the LCS unique?
+A:  The length is unique; the sequence may not be.
+
+Q8. Lab file samples?
+A:  ABCDGH and AEDFHR give ADH (length 3). AGGTAB and GXTXAYB give GTAB
+    (length 4).
+
+
+------------------------------------------------------------------------------
+SN 17 (open-ended 1): Minimum currency notes using greedy  [lab file OE 1]
+------------------------------------------------------------------------------
+Time complexity: O(k log k) to sort k denominations, then O(k) using division
+(or one step per note).
+
+VIVA QUESTIONS AND ANSWERS:
+
+Q1. What is the greedy rule?
+A:  Repeatedly take the largest note that is not more than the remaining
+    amount.
+
+Q2. Is greedy always optimal?
+A:  Only for "canonical" systems like Indian currency. For {10, 40, 60} and
+    80, greedy gives 60 + 10 + 10 (3 notes); the best is 40 + 40 (2 notes).
+
+Q3. Can greedy fail completely?
+A:  Yes. For {20, 30, 50} and 90, greedy takes 50 + 30 and cannot make the
+    last 10, but 30 + 30 + 30 works.
+
+Q4. Which method is always correct?
+A:  Dynamic programming: dp[a] = min over notes d <= a of dp[a - d] + 1, with
+    dp[0] = 0. O(kA) time.
+
+Q5. Answer for 289 with Indian notes?
+A:  100 + 100 + 50 + 20 + 10 + 5 + 2 + 2 = 8 notes.
+
+Q6. Why does greedy work for Indian currency?
+A:  Each denomination is "big enough" relative to the smaller ones that using
+    a larger note never needs more notes in total (a canonical coin system).
