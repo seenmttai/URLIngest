@@ -88,3 +88,1198 @@ SN.    Type    Title/Name    Description    ISBN/ URL
 3    Book    1. Sara Basse, A. V. Gelder, “Computer Algorithms,” Addison Willey Publication
 4    Book    2. J.E Hopcroft, J.D Ullman, “Design and analysis of algorithms” TMH Publication
 5    Book    3. D. E. Knuth, “ The art of Computer Program:, PHI Publication
+
+
+==============================================================================
+PART 2: CODE + TIME COMPLEXITY FOR THE EXPERIMENTS NOT IN THE CLASS LAB FILE
+==============================================================================
+The class lab file (Pratham's) has: Binary search, Insertion sort, Quick sort,
+Merge sort, Strassen, Fractional knapsack, Dijkstra, LCS, 0/1 knapsack (DP),
+Floyd-Warshall, N-Queens, 0/1 knapsack (LC branch and bound), and the
+open-ended Currency change, LCS, Book cartons, Dragons.
+
+Already in the lab file (no new code needed):
+  Exp 3   Knapsack, greedy approach      -> Program 6        O(n log n)
+  Exp 4   0/1 Knapsack, DP               -> Program 9        O(n W)
+  Exp 7   Dijkstra                       -> Program 7        O(V^2) matrix, O((V+E) log V) heap
+  Exp 8   N-Queens, backtracking         -> Program 11       O(N!)
+  SN 12   Longest Common Subsequence     -> Program 8 / OE 2 O(m n)
+  SN 13   Road network shortest paths    -> Dijkstra, Program 7 (positive weights)
+  SN 17   Minimum currency notes         -> OE 1             O(k) after sorting k denominations
+
+Quick table for the rest (code below):
+  Exp 1   Recursive binary search + timing  Divide & conquer     O(log n)
+  Exp 2   Quick sort + timing               Divide & conquer     avg O(n log n), worst O(n^2)
+  Exp 5   BFS / DFS reachable nodes         Traversal            O(V^2) matrix, O(V+E) list
+  Exp 6   Prim's MST                        Greedy               O(V^2) matrix, O(E log V) heap
+  Exp 6   Kruskal's MST                     Greedy               O(E log E)
+  Exp 9   0/1 knapsack                      Backtracking         O(2^n)
+  Exp 10  TSP                               LC branch & bound    O(n!) worst
+  SN 11   Hamiltonian cycle / TSP           Backtracking         O(n!)
+  SN 14   Assignment problem                Branch & bound       O(n!) worst; Hungarian O(n^3)
+  SN 15   Optimal BST                       Dynamic programming  O(n^3)
+  SN 16   Naive string matching             Brute force          O(nm)
+  SN 16   KMP                               Prefix function      O(n + m)
+  SN 16   Rabin-Karp                        Rolling hash         avg O(n + m), worst O(nm)
+
+All programs below are C, compiled with gcc and run on the sample input shown.
+TSP, Hamiltonian and Assignment were also checked against brute force on 150
+random inputs each (all matched).
+
+------------------------------------------------------------------------------
+EXPERIMENT 1: Recursive Binary Search + time taken vs n (with graph)
+------------------------------------------------------------------------------
+Note: The lab file has binary search, but not the timing-vs-n graph. This
+version adds it.
+Technique: Divide and conquer (decrease and conquer: one half is thrown away each step)
+Time complexity:
+  - Best case: O(1) (key is the middle element)
+  - Average / worst case: O(log n)
+  - Recurrence: T(n) = T(n/2) + O(1) => O(log n)
+  - Space: O(log n) for the recursion stack (iterative version: O(1))
+How it works: Compare the key with the middle element; recurse into the left
+or right half. One search is too fast to time, so the program times 10 lakh
+searches for each n and divides. Plot n against time per search: it grows like
+log n (slowly).
+
+C PROGRAM:
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAXN 1000000
+#define REPEAT 1000000     /* one search takes far less than a clock tick, so time many */
+
+int a[MAXN], keys[REPEAT];
+volatile int sink;         /* stops the compiler from deleting the timed loop */
+
+int binarySearch(int a[], int low, int high, int key) {
+    int mid;
+    if (low > high)
+        return -1;                                   /* empty range: not found */
+    mid = (low + high) / 2;
+    if (a[mid] == key)
+        return mid;
+    else if (key < a[mid])
+        return binarySearch(a, low, mid - 1, key);   /* search left half */
+    else
+        return binarySearch(a, mid + 1, high, key);  /* search right half */
+}
+
+int main() {
+    int sizes[] = {1000, 5000, 10000, 50000, 100000, 500000, 1000000};
+    int k, n, i, r, key, pos;
+    clock_t start, end;
+    double total;
+
+    /* Part 1: normal run on the user's array */
+    printf("Enter number of elements: ");
+    scanf("%d", &n);
+    printf("Enter %d elements in sorted order:\n", n);
+    for (i = 0; i < n; i++)
+        scanf("%d", &a[i]);
+    printf("Enter element to search: ");
+    scanf("%d", &key);
+    pos = binarySearch(a, 0, n - 1, key);
+    if (pos == -1)
+        printf("Element not found\n");
+    else
+        printf("Element found at position %d\n", pos + 1);
+
+    /* Part 2: time taken versus n */
+    srand(time(NULL));
+    printf("\n%10s %18s %20s\n", "n", "total time (s)", "per search (us)");
+    for (k = 0; k < 7; k++) {
+        n = sizes[k];
+        for (i = 0; i < n; i++)
+            a[i] = 2 * i;                            /* sorted even numbers */
+        for (r = 0; r < REPEAT; r++)
+            keys[r] = 2 * (rand() % n) + 1;          /* odd: never present = worst case */
+        start = clock();                             /* time only the searches */
+        for (r = 0; r < REPEAT; r++)
+            sink = binarySearch(a, 0, n - 1, keys[r]);
+        end = clock();
+        total = (double)(end - start) / CLOCKS_PER_SEC;
+        printf("%10d %18.6f %20.4f\n", n, total, total / REPEAT * 1e6);
+    }
+    printf("\nPlot n (x-axis) against time per search (y-axis): the curve is log n.\n");
+    return 0;
+}
+
+SAMPLE RUN (times depend on the computer):
+
+Enter number of elements: 7
+Enter 7 elements in sorted order:
+2 5 8 12 16 23 38
+Enter element to search: 23
+Element found at position 6
+
+         n     total time (s)      per search (us)
+      1000           0.118368               0.1184
+      5000           0.144696               0.1447
+     10000           0.155786               0.1558
+     50000           0.187337               0.1873
+    100000           0.218363               0.2184
+    500000           0.358656               0.3587
+   1000000           0.549550               0.5495
+
+Plot n (x-axis) against time per search (y-axis): the curve is log n.
+
+
+------------------------------------------------------------------------------
+EXPERIMENT 2: Quick Sort + time taken vs n (with graph)
+------------------------------------------------------------------------------
+Note: The lab file has quick sort, but not the timing-vs-n graph. This version
+adds it.
+Technique: Divide and conquer
+Time complexity:
+  - Best / average case: O(n log n) recurrence T(n) = 2T(n/2) + O(n)
+  - Worst case: O(n^2) recurrence T(n) = T(n-1) + O(n); happens on already
+  sorted input when the last element is the pivot
+  - Space: O(log n) recursion stack on average, O(n) in the worst case
+  - Not stable, in-place
+How it works: Partition around a pivot (last element): smaller elements go
+left, bigger go right, the pivot lands in its final place. Recurse on both
+sides. Random input gives the n log n curve.
+
+C PROGRAM:
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAXN 500000
+
+int a[MAXN];
+
+int partition(int a[], int low, int high) {
+    int pivot = a[high];          /* last element is the pivot */
+    int i = low - 1, j, t;
+    for (j = low; j < high; j++) {
+        if (a[j] < pivot) {
+            i++;
+            t = a[i]; a[i] = a[j]; a[j] = t;
+        }
+    }
+    t = a[i + 1]; a[i + 1] = a[high]; a[high] = t;
+    return i + 1;                 /* pivot's final position */
+}
+
+void quickSort(int a[], int low, int high) {
+    int p;
+    if (low < high) {
+        p = partition(a, low, high);
+        quickSort(a, low, p - 1);
+        quickSort(a, p + 1, high);
+    }
+}
+
+int main() {
+    int sizes[] = {1000, 5000, 10000, 50000, 100000, 500000};
+    int k, n, i;
+    clock_t start, end;
+
+    /* Part 1: normal run on the user's array */
+    printf("Enter number of elements: ");
+    scanf("%d", &n);
+    printf("Enter %d elements:\n", n);
+    for (i = 0; i < n; i++)
+        scanf("%d", &a[i]);
+    quickSort(a, 0, n - 1);
+    printf("Sorted array: ");
+    for (i = 0; i < n; i++)
+        printf("%d ", a[i]);
+    printf("\n");
+
+    /* Part 2: time taken versus n (random input = average case) */
+    srand(time(NULL));
+    printf("\n%10s %15s\n", "n", "time (s)");
+    for (k = 0; k < 6; k++) {
+        n = sizes[k];
+        for (i = 0; i < n; i++)
+            a[i] = rand() % 100000;
+        start = clock();
+        quickSort(a, 0, n - 1);
+        end = clock();
+        printf("%10d %15.6f\n", n, (double)(end - start) / CLOCKS_PER_SEC);
+    }
+    printf("\nPlot n (x-axis) against time (y-axis): the curve is n log n.\n");
+    return 0;
+}
+
+SAMPLE RUN (times depend on the computer):
+
+Enter number of elements: 7
+Enter 7 elements:
+10 80 30 90 40 50 70
+Sorted array: 10 30 40 50 70 80 90 
+
+         n        time (s)
+      1000        0.000228
+      5000        0.001718
+     10000        0.002945
+     50000        0.012656
+    100000        0.014579
+    500000        0.078524
+
+Plot n (x-axis) against time (y-axis): the curve is n log n.
+
+
+------------------------------------------------------------------------------
+EXPERIMENT 5: Nodes reachable from a start node in a digraph, using BFS / DFS
+------------------------------------------------------------------------------
+Technique: Graph traversal. BFS uses a queue (level by level); DFS uses recursion (a stack, goes deep first)
+Time complexity:
+  - Adjacency matrix (this code): O(V^2) for both BFS and DFS
+  - Adjacency list: O(V + E)
+  - Space: O(V) for visited[] and the queue / recursion stack
+How it works: Mark the start vertex visited. BFS: take a vertex from the
+queue, print it, and enqueue all unvisited neighbours. DFS: print the vertex,
+then recursively visit each unvisited neighbour. Every vertex printed is
+reachable from the start. adj[i][j] = 1 means an edge i -> j, so the same code
+works for a digraph. In the sample, vertex 5 is not reachable.
+
+C PROGRAM:
+
+#include <stdio.h>
+#define MAX 20
+
+int adj[MAX][MAX];
+int n;
+int visited[MAX];
+
+void bfs(int start) {
+    int queue[MAX], front = 0, rear = 0;
+    int v, i;
+    for (i = 0; i < n; i++) visited[i] = 0;
+    visited[start] = 1;
+    queue[rear++] = start;                 /* enqueue */
+    while (front < rear) {
+        v = queue[front++];                /* dequeue */
+        printf("%d ", v);
+        for (i = 0; i < n; i++)
+            if (adj[v][i] == 1 && !visited[i]) {
+                visited[i] = 1;            /* mark when enqueued */
+                queue[rear++] = i;
+            }
+    }
+    printf("\n");
+}
+
+void dfs(int v) {
+    int i;
+    visited[v] = 1;
+    printf("%d ", v);
+    for (i = 0; i < n; i++)
+        if (adj[v][i] == 1 && !visited[i])
+            dfs(i);                        /* recursion = implicit stack */
+}
+
+int main() {
+    int i, j, start;
+    printf("Enter number of vertices: ");
+    scanf("%d", &n);
+    printf("Enter adjacency matrix:\n");
+    for (i = 0; i < n; i++)
+        for (j = 0; j < n; j++)
+            scanf("%d", &adj[i][j]);
+    printf("Enter start vertex: ");
+    scanf("%d", &start);
+
+    printf("\nBFS - nodes reachable from %d: ", start);
+    bfs(start);
+
+    for (i = 0; i < n; i++) visited[i] = 0;
+    printf("DFS - nodes reachable from %d: ", start);
+    dfs(start);
+    printf("\n");
+    return 0;
+}
+
+SAMPLE RUN:
+
+Enter number of vertices: 6
+Enter adjacency matrix:
+0 1 1 0 0 0
+1 0 0 1 1 0
+1 0 0 0 1 0
+0 1 0 0 0 0
+0 1 1 0 0 0
+0 0 0 0 0 0
+Enter start vertex: 0
+
+BFS - nodes reachable from 0: 0 1 2 3 4 
+DFS - nodes reachable from 0: 0 1 3 4 2
+
+
+------------------------------------------------------------------------------
+EXPERIMENT 6: Minimum Cost Spanning Tree using Prim's / Kruskal's algorithm
+------------------------------------------------------------------------------
+Technique: Greedy
+Time complexity:
+  - Prim (adjacency matrix, this code): O(V^2); with a binary heap: O(E log V)
+  - Kruskal: O(E log E) = O(E log V) (sorting the edges dominates). This code
+  uses bubble sort to stay short, which is O(E^2); with qsort / merge sort it
+  is O(E log E)
+  - Space: O(V) for Prim; O(E + V) for Kruskal (edge list + parent array)
+  - An MST of V vertices always has V - 1 edges
+How it works: Prim: grow one tree from vertex 0; each step add the cheapest
+edge joining the tree to a new vertex. Kruskal: sort all edges by cost and
+take each edge that does not make a cycle (checked with union-find: both ends
+in the same set means a cycle).
+
+(a) PRIM'S ALGORITHM
+
+C PROGRAM:
+
+#include <stdio.h>
+#define INF 9999
+#define MAX 20
+
+int main() {
+    int cost[MAX][MAX], key[MAX], parent[MAX], inMST[MAX];
+    int n, i, j, count, min, u, total = 0;
+    printf("Enter number of vertices: ");
+    scanf("%d", &n);
+    printf("Enter cost matrix (0 = no edge):\n");
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            scanf("%d", &cost[i][j]);
+            if (cost[i][j] == 0)
+                cost[i][j] = INF;
+        }
+    }
+    for (i = 0; i < n; i++) {
+        key[i] = INF;
+        inMST[i] = 0;
+    }
+    key[0] = 0;          /* start from vertex 0 */
+    parent[0] = -1;
+
+    for (count = 0; count < n; count++) {
+        min = INF;
+        u = -1;
+        for (i = 0; i < n; i++)
+            if (!inMST[i] && key[i] < min) {
+                min = key[i];
+                u = i;
+            }
+        if (u == -1) {
+            printf("Graph is not connected.\n");
+            return 0;
+        }
+        inMST[u] = 1;
+        total += key[u];
+        for (j = 0; j < n; j++)
+            if (!inMST[j] && cost[u][j] < key[j]) {
+                key[j] = cost[u][j];
+                parent[j] = u;
+            }
+    }
+
+    printf("Edge   Cost\n");
+    for (i = 1; i < n; i++)
+        printf("%d - %d   %d\n", parent[i], i, cost[parent[i]][i]);
+    printf("Total cost of MST = %d\n", total);
+    return 0;
+}
+
+SAMPLE RUN:
+
+Enter number of vertices: 5
+Enter cost matrix (0 = no edge):
+0 2 0 6 0
+2 0 3 8 5
+0 3 0 0 7
+6 8 0 0 9
+0 5 7 9 0
+Edge   Cost
+0 - 1   2
+1 - 2   3
+0 - 3   6
+1 - 4   5
+Total cost of MST = 16
+
+
+(b) KRUSKAL'S ALGORITHM
+
+C PROGRAM:
+
+#include <stdio.h>
+#define MAX 20
+
+int parent[MAX];
+
+int find(int v) {                      /* root of v's set */
+    while (parent[v] != v)
+        v = parent[v];
+    return v;
+}
+
+int main() {
+    int cost[MAX][MAX], eu[MAX * MAX], ev[MAX * MAX], ew[MAX * MAX];
+    int n, i, j, m = 0, t, count = 0, total = 0, ru, rv;
+    printf("Enter number of vertices: ");
+    scanf("%d", &n);
+    printf("Enter cost matrix (0 = no edge):\n");
+    for (i = 0; i < n; i++)
+        for (j = 0; j < n; j++)
+            scanf("%d", &cost[i][j]);
+
+    /* edge list: each undirected edge once (i < j) */
+    for (i = 0; i < n; i++)
+        for (j = i + 1; j < n; j++)
+            if (cost[i][j] != 0) {
+                eu[m] = i; ev[m] = j; ew[m] = cost[i][j]; m++;
+            }
+
+    /* sort edges by weight (bubble sort keeps it simple) */
+    for (i = 0; i < m - 1; i++)
+        for (j = 0; j < m - 1 - i; j++)
+            if (ew[j] > ew[j + 1]) {
+                t = ew[j]; ew[j] = ew[j + 1]; ew[j + 1] = t;
+                t = eu[j]; eu[j] = eu[j + 1]; eu[j + 1] = t;
+                t = ev[j]; ev[j] = ev[j + 1]; ev[j + 1] = t;
+            }
+
+    for (i = 0; i < n; i++)
+        parent[i] = i;                 /* every vertex is its own set */
+
+    printf("Edge   Cost\n");
+    for (i = 0; i < m && count < n - 1; i++) {
+        ru = find(eu[i]);
+        rv = find(ev[i]);
+        if (ru != rv) {                /* different sets: no cycle, take it */
+            parent[ru] = rv;           /* union */
+            printf("%d - %d   %d\n", eu[i], ev[i], ew[i]);
+            total += ew[i];
+            count++;
+        }
+    }
+    if (count < n - 1)
+        printf("Graph is not connected.\n");
+    printf("Total cost of MST = %d\n", total);
+    return 0;
+}
+
+SAMPLE RUN:
+
+Enter number of vertices: 5
+Enter cost matrix (0 = no edge):
+0 2 0 6 0
+2 0 3 8 5
+0 3 0 0 7
+6 8 0 0 9
+0 5 7 9 0
+Edge   Cost
+0 - 1   2
+1 - 2   3
+1 - 4   5
+0 - 3   6
+Total cost of MST = 16
+
+
+------------------------------------------------------------------------------
+EXPERIMENT 9: 0/1 Knapsack using Backtracking
+------------------------------------------------------------------------------
+Technique: Backtracking (DFS on the state-space tree, pruning with a bound)
+Time complexity:
+  - Worst case: O(2^n) nodes (each item is either taken or not), O(n) bound
+  per node, so O(n * 2^n)
+  - Space: O(n) for the recursion stack and the x[] vector
+How it works: Sort items by profit/weight. At level k decide item k: left
+child = take it (only if it fits), right child = leave it (only if the bound,
+i.e. the fractional-knapsack estimate of the best possible profit, beats the
+best answer found so far). The pruning is what makes it faster than trying all
+2^n subsets.
+
+C PROGRAM:
+
+#include <stdio.h>
+#define MAX 20
+
+int n, M;
+int p[MAX + 1], w[MAX + 1];
+int x[MAX + 1], bestx[MAX + 1];
+int bestProfit = 0;
+int nodes = 0;
+
+/* upper bound on profit from level k onward: fill by ratio, last item fractionally */
+float bound(int k, int cw, int cp) {
+    float b = cp;
+    int j = k;
+    while (j <= n && cw + w[j] <= M) {
+        cw += w[j];
+        b += p[j];
+        j++;
+    }
+    if (j <= n)
+        b += (float)(M - cw) / w[j] * p[j];
+    return b;
+}
+
+void knap(int k, int cw, int cp) {
+    int i;
+    nodes++;
+    if (k > n) {                       /* leaf: all items decided */
+        if (cp > bestProfit) {
+            bestProfit = cp;
+            for (i = 1; i <= n; i++) bestx[i] = x[i];
+        }
+        return;
+    }
+    if (cw + w[k] <= M) {              /* left child: include item k (if it fits) */
+        x[k] = 1;
+        knap(k + 1, cw + w[k], cp + p[k]);
+    }
+    if (bound(k + 1, cw, cp) > bestProfit) {   /* right child: exclude, only if promising */
+        x[k] = 0;
+        knap(k + 1, cw, cp);
+    }
+}
+
+int main() {
+    int i, j, t;
+    printf("Enter number of items: ");
+    scanf("%d", &n);
+    printf("Enter profits:\n");
+    for (i = 1; i <= n; i++) scanf("%d", &p[i]);
+    printf("Enter weights:\n");
+    for (i = 1; i <= n; i++) scanf("%d", &w[i]);
+    printf("Enter capacity: ");
+    scanf("%d", &M);
+
+    /* sort by profit/weight, largest first */
+    for (i = 1; i < n; i++)
+        for (j = i + 1; j <= n; j++)
+            if (p[j] * w[i] > p[i] * w[j]) {
+                t = p[i]; p[i] = p[j]; p[j] = t;
+                t = w[i]; w[i] = w[j]; w[j] = t;
+            }
+
+    knap(1, 0, 0);
+
+    printf("\nMaximum profit = %d\n", bestProfit);
+    printf("Items taken (after sorting by p/w):\n");
+    for (i = 1; i <= n; i++)
+        if (bestx[i])
+            printf("  item %d (p = %d, w = %d)\n", i, p[i], w[i]);
+    printf("Nodes visited = %d\n", nodes);
+    return 0;
+}
+
+SAMPLE RUN:
+
+Enter number of items: 4
+Enter profits:
+3 5 6 10
+Enter weights:
+2 3 4 5
+Enter capacity: 8
+
+Maximum profit = 15
+Items taken (after sorting by p/w):
+  item 1 (p = 10, w = 5)
+  item 2 (p = 5, w = 3)
+Nodes visited = 5
+
+
+------------------------------------------------------------------------------
+EXPERIMENT 10: Travelling Salesman Problem using Branch and Bound
+------------------------------------------------------------------------------
+Technique: LC (least cost) branch and bound with a reduced cost matrix
+Time complexity:
+  - Worst case: O(n!) nodes (exponential); reducing a matrix is O(n^2) per
+  node, so O(n^2 * n!) worst case. In practice far fewer nodes (11 in the
+  sample)
+  - Space: each live node stores an n x n matrix, so O(n^2) per node
+  - Compare: brute force O(n!), DP (Held-Karp) O(n^2 * 2^n)
+How it works: Reduce the matrix (subtract row minima, then column minima). The
+total subtracted is a lower bound on every tour. For the edge i -> j: set row
+i and column j to INF, set [j][1] to INF, reduce again. Child cost = parent
+cost + reduced cost(i, j) + new reduction. Always expand the live node with
+the least cost; kill nodes whose cost is no better than the best tour. The
+sample is the slides example (answer 28).
+
+C PROGRAM:
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX 10
+#define INF 99999
+
+typedef struct {
+    int m[MAX][MAX];       /* reduced cost matrix of this node */
+    int path[MAX];         /* cities visited so far (0-based) */
+    int level;             /* number of edges in the path */
+    int city;              /* last city of the path */
+    int cost;              /* lower bound for any tour through this path */
+} Node;
+
+int n, c[MAX][MAX];
+Node *live[200000];         /* live nodes (the LC "queue") */
+
+/* subtract row minima then column minima; return the total subtracted */
+int reduce(int m[MAX][MAX]) {
+    int i, j, min, r = 0;
+    for (i = 0; i < n; i++) {
+        min = INF;
+        for (j = 0; j < n; j++) if (m[i][j] < min) min = m[i][j];
+        if (min != INF && min > 0) {
+            for (j = 0; j < n; j++) if (m[i][j] != INF) m[i][j] -= min;
+            r += min;
+        }
+    }
+    for (j = 0; j < n; j++) {
+        min = INF;
+        for (i = 0; i < n; i++) if (m[i][j] < min) min = m[i][j];
+        if (min != INF && min > 0) {
+            for (i = 0; i < n; i++) if (m[i][j] != INF) m[i][j] -= min;
+            r += min;
+        }
+    }
+    return r;
+}
+
+int main() {
+    Node *e, *ch;
+    int nlive = 0, i, j, k, best = INF, bestPath[MAX + 1], visited[MAX], tour, nodes = 0;
+
+    printf("Enter number of cities: ");
+    scanf("%d", &n);
+    printf("Enter cost matrix (0 on the diagonal / no edge):\n");
+    for (i = 0; i < n; i++)
+        for (j = 0; j < n; j++) {
+            scanf("%d", &c[i][j]);
+            if (i == j || c[i][j] == 0) c[i][j] = INF;
+        }
+
+    /* root: path = {city 1}, cost = reduction of the whole matrix */
+    e = malloc(sizeof(Node));
+    memcpy(e->m, c, sizeof(c));
+    e->path[0] = 0; e->level = 0; e->city = 0;
+    e->cost = reduce(e->m);
+    live[nlive++] = e;
+
+    while (nlive > 0) {
+        /* LC search: take the live node with the least cost */
+        k = 0;
+        for (i = 1; i < nlive; i++) if (live[i]->cost < live[k]->cost) k = i;
+        e = live[k];
+        live[k] = live[--nlive];
+        nodes++;
+
+        if (e->cost >= best) { free(e); continue; }   /* bound: kill it */
+
+        if (e->level == n - 1) {                      /* complete path: close the tour */
+            if (c[e->city][0] != INF) {
+                tour = 0;
+                for (i = 0; i < n - 1; i++) tour += c[e->path[i]][e->path[i + 1]];
+                tour += c[e->city][0];
+                if (tour < best) {
+                    best = tour;
+                    for (i = 0; i < n; i++) bestPath[i] = e->path[i];
+                    bestPath[n] = 0;
+                }
+            }
+            free(e);
+            continue;
+        }
+
+        for (i = 0; i < n; i++) visited[i] = 0;
+        for (i = 0; i <= e->level; i++) visited[e->path[i]] = 1;
+
+        for (j = 0; j < n; j++) {                     /* branch: go from e->city to j */
+            if (visited[j] || e->m[e->city][j] == INF) continue;
+            ch = malloc(sizeof(Node));
+            memcpy(ch->m, e->m, sizeof(e->m));
+            for (k = 0; k < n; k++) {
+                ch->m[e->city][k] = INF;              /* row i = inf */
+                ch->m[k][j] = INF;                    /* column j = inf */
+            }
+            ch->m[j][0] = INF;                        /* no early return to city 1 */
+            memcpy(ch->path, e->path, sizeof(e->path));
+            ch->level = e->level + 1;
+            ch->path[ch->level] = j;
+            ch->city = j;
+            ch->cost = e->cost + e->m[e->city][j] + reduce(ch->m);
+            live[nlive++] = ch;
+        }
+        free(e);
+    }
+
+    if (best == INF) {
+        printf("No tour exists.\n");
+        return 0;
+    }
+    printf("\nMinimum tour cost = %d\n", best);
+    printf("Tour: ");
+    for (i = 0; i <= n; i++)
+        printf("%d%s", bestPath[i] + 1, i < n ? " -> " : "\n");
+    printf("Nodes expanded = %d\n", nodes);
+    return 0;
+}
+
+SAMPLE RUN:
+
+Enter number of cities: 5
+Enter cost matrix (0 on the diagonal / no edge):
+0 20 30 10 11
+15 0 16 4 2
+3 5 0 2 4
+19 6 18 0 3
+16 4 7 16 0
+
+Minimum tour cost = 28
+Tour: 1 -> 4 -> 2 -> 5 -> 3 -> 1
+Nodes expanded = 11
+
+
+------------------------------------------------------------------------------
+OPEN-ENDED 1 (SN 11): Hamiltonian cycle, and TSP using the Hamiltonian cycle approach
+------------------------------------------------------------------------------
+Technique: Backtracking
+Time complexity:
+  - Worst case: O(n!) since there are (n-1)! orderings of the other vertices;
+  O(n) check each, so O(n * n!)
+  - Space: O(n) for the path array x[] and the recursion stack
+  - Hamiltonian cycle is NP-complete; TSP (decision version) is NP-complete
+How it works: Fix city 1 at position 0. At position k try every vertex v that
+is adjacent to the previous vertex and not used yet; recurse; undo
+(backtrack). When all n are placed and there is an edge back to city 1, it is
+a Hamiltonian cycle. TSP answer = cheapest such cycle. (Each cycle is printed
+twice, once in each direction.)
+
+C PROGRAM:
+
+#include <stdio.h>
+#define MAX 10
+
+int n, g[MAX][MAX], x[MAX];
+int count = 0, best = -1, bestx[MAX];
+
+/* can vertex v go at position k of the path? */
+int isSafe(int v, int k) {
+    int i;
+    if (g[x[k - 1]][v] == 0)          /* must be adjacent to the previous vertex */
+        return 0;
+    for (i = 0; i < k; i++)           /* must not be used already */
+        if (x[i] == v)
+            return 0;
+    return 1;
+}
+
+void hamiltonian(int k) {
+    int v, i, cost;
+    if (k == n) {                                   /* all vertices placed */
+        if (g[x[n - 1]][x[0]] != 0) {               /* edge back to start: a cycle */
+            cost = 0;
+            for (i = 0; i < n - 1; i++) cost += g[x[i]][x[i + 1]];
+            cost += g[x[n - 1]][x[0]];
+            count++;
+            printf("Cycle %d: ", count);
+            for (i = 0; i < n; i++) printf("%d -> ", x[i] + 1);
+            printf("%d   cost = %d\n", x[0] + 1, cost);
+            if (best == -1 || cost < best) {
+                best = cost;
+                for (i = 0; i < n; i++) bestx[i] = x[i];
+            }
+        }
+        return;
+    }
+    for (v = 1; v < n; v++) {
+        if (isSafe(v, k)) {
+            x[k] = v;                               /* place v */
+            hamiltonian(k + 1);
+            x[k] = -1;                              /* backtrack */
+        }
+    }
+}
+
+int main() {
+    int i, j;
+    printf("Enter number of cities: ");
+    scanf("%d", &n);
+    printf("Enter cost matrix (0 = no road):\n");
+    for (i = 0; i < n; i++)
+        for (j = 0; j < n; j++)
+            scanf("%d", &g[i][j]);
+    for (i = 0; i < n; i++) x[i] = -1;
+    x[0] = 0;                                       /* every cycle starts at city 1 */
+
+    printf("\nHamiltonian cycles:\n");
+    hamiltonian(1);
+    if (count == 0) {
+        printf("No Hamiltonian cycle, so no TSP tour.\n");
+        return 0;
+    }
+    printf("\nTSP answer (cheapest Hamiltonian cycle): ");
+    for (i = 0; i < n; i++) printf("%d -> ", bestx[i] + 1);
+    printf("%d\nMinimum cost = %d\n", bestx[0] + 1, best);
+    return 0;
+}
+
+SAMPLE RUN:
+
+Enter number of cities: 5
+Enter cost matrix (0 = no road):
+0 3 0 2 7
+3 0 4 6 0
+0 4 0 5 1
+2 6 5 0 3
+7 0 1 3 0
+
+Hamiltonian cycles:
+Cycle 1: 1 -> 2 -> 3 -> 4 -> 5 -> 1   cost = 22
+Cycle 2: 1 -> 2 -> 3 -> 5 -> 4 -> 1   cost = 13
+Cycle 3: 1 -> 2 -> 4 -> 3 -> 5 -> 1   cost = 22
+Cycle 4: 1 -> 4 -> 2 -> 3 -> 5 -> 1   cost = 20
+Cycle 5: 1 -> 4 -> 5 -> 3 -> 2 -> 1   cost = 13
+Cycle 6: 1 -> 5 -> 3 -> 2 -> 4 -> 1   cost = 20
+Cycle 7: 1 -> 5 -> 3 -> 4 -> 2 -> 1   cost = 22
+Cycle 8: 1 -> 5 -> 4 -> 3 -> 2 -> 1   cost = 22
+
+TSP answer (cheapest Hamiltonian cycle): 1 -> 2 -> 3 -> 5 -> 4 -> 1
+Minimum cost = 13
+
+
+------------------------------------------------------------------------------
+OPEN-ENDED 4 (SN 14): Assignment problem (n agents, n tasks, minimum total cost)
+------------------------------------------------------------------------------
+Technique: Branch and bound (DFS with a lower bound)
+Time complexity:
+  - Worst case: O(n!) complete assignments; the bound costs O(n^2) per node
+  - Space: O(n)
+  - Polynomial alternative: Hungarian method, O(n^3)
+How it works: Assign agents one by one. Lower bound for a partial assignment =
+cost so far + for every remaining agent, its cheapest still-free task. If the
+bound is not below the best complete assignment found, prune that branch.
+Sample: textbook 4x4 example, answer 13.
+
+C PROGRAM:
+
+#include <stdio.h>
+#define MAX 10
+#define INF 99999
+
+int n, c[MAX][MAX];
+int assign[MAX], used[MAX];         /* assign[agent] = task; used[task] = 1 if taken */
+int best = INF, bestAssign[MAX], nodes = 0;
+
+/* lower bound: cost so far + cheapest free task for every agent not yet assigned */
+int bound(int agent, int costSoFar) {
+    int i, j, min, b = costSoFar;
+    for (i = agent; i < n; i++) {
+        min = INF;
+        for (j = 0; j < n; j++)
+            if (!used[j] && c[i][j] < min) min = c[i][j];
+        b += min;
+    }
+    return b;
+}
+
+void solve(int agent, int costSoFar) {
+    int j, i;
+    nodes++;
+    if (agent == n) {                               /* every agent has a task */
+        if (costSoFar < best) {
+            best = costSoFar;
+            for (i = 0; i < n; i++) bestAssign[i] = assign[i];
+        }
+        return;
+    }
+    for (j = 0; j < n; j++) {
+        if (!used[j]) {
+            used[j] = 1;
+            assign[agent] = j;
+            if (bound(agent + 1, costSoFar + c[agent][j]) < best)   /* promising? */
+                solve(agent + 1, costSoFar + c[agent][j]);
+            used[j] = 0;                            /* backtrack */
+        }
+    }
+}
+
+int main() {
+    int i, j;
+    printf("Enter number of agents (= number of tasks): ");
+    scanf("%d", &n);
+    printf("Enter cost matrix (row = agent, column = task):\n");
+    for (i = 0; i < n; i++)
+        for (j = 0; j < n; j++)
+            scanf("%d", &c[i][j]);
+
+    solve(0, 0);
+
+    printf("\nOptimal assignment:\n");
+    for (i = 0; i < n; i++)
+        printf("  Agent %d -> Task %d   cost %d\n", i + 1, bestAssign[i] + 1, c[i][bestAssign[i]]);
+    printf("Minimum total cost = %d\n", best);
+    printf("Nodes explored = %d\n", nodes);
+    return 0;
+}
+
+SAMPLE RUN:
+
+Enter number of agents (= number of tasks): 4
+Enter cost matrix (row = agent, column = task):
+9 2 7 8
+6 4 3 7
+5 8 1 8
+7 6 9 4
+
+Optimal assignment:
+  Agent 1 -> Task 2   cost 2
+  Agent 2 -> Task 1   cost 6
+  Agent 3 -> Task 3   cost 1
+  Agent 4 -> Task 4   cost 4
+Minimum total cost = 13
+Nodes explored = 9
+
+
+------------------------------------------------------------------------------
+SN 15: Optimal Binary Search Tree (dictionary words with search frequencies)
+------------------------------------------------------------------------------
+Technique: Dynamic programming
+Time complexity:
+  - Time: O(n^3) (n^2 subproblems, each tries up to n roots). With Knuth's
+  optimisation: O(n^2)
+  - Space: O(n^2) for the e[][], w[][], root[][] tables
+How it works: p[i] = probability that word i is searched; q[i] = probability
+that a search falls between word i and i+1 (a word with no entry). e[i][j] =
+min over root r of e[i][r-1] + e[r+1][j] + w[i][j], where w[i][j] = sum of p
+and q in the range. Frequent words end up near the root. Sample = CLRS example
+(cost 2.75).
+
+C PROGRAM:
+
+#include <stdio.h>
+#define MAX 20
+
+int n;
+char word[MAX + 1][30];
+float p[MAX + 1], q[MAX + 1];              /* p[i]: word i searched; q[i]: search between word i and i+1 fails */
+float e[MAX + 2][MAX + 1], w[MAX + 2][MAX + 1];
+int root[MAX + 1][MAX + 1];
+
+void printTree(int i, int j, int parent, const char *side) {
+    int r;
+    if (i > j) return;
+    r = root[i][j];
+    if (parent == 0)
+        printf("  \"%s\" is the root\n", word[r]);
+    else
+        printf("  \"%s\" is the %s child of \"%s\"\n", word[r], side, word[parent]);
+    printTree(i, r - 1, r, "left");
+    printTree(r + 1, j, r, "right");
+}
+
+int main() {
+    int i, j, l, r;
+    float t;
+    printf("Enter number of words: ");
+    scanf("%d", &n);
+    printf("Enter %d words in sorted order:\n", n);
+    for (i = 1; i <= n; i++) scanf("%s", word[i]);
+    printf("Enter search probabilities p1..p%d:\n", n);
+    for (i = 1; i <= n; i++) scanf("%f", &p[i]);
+    printf("Enter failure probabilities q0..q%d:\n", n);
+    for (i = 0; i <= n; i++) scanf("%f", &q[i]);
+
+    for (i = 1; i <= n + 1; i++) {          /* empty trees: only a dummy leaf */
+        e[i][i - 1] = q[i - 1];
+        w[i][i - 1] = q[i - 1];
+    }
+    for (l = 1; l <= n; l++) {              /* l = number of words in the subtree */
+        for (i = 1; i <= n - l + 1; i++) {
+            j = i + l - 1;
+            e[i][j] = 1e9;
+            w[i][j] = w[i][j - 1] + p[j] + q[j];
+            for (r = i; r <= j; r++) {      /* try every word as the root */
+                t = e[i][r - 1] + e[r + 1][j] + w[i][j];
+                if (t < e[i][j]) {
+                    e[i][j] = t;
+                    root[i][j] = r;
+                }
+            }
+        }
+    }
+
+    printf("\nMinimum expected search cost = %.2f\n", e[1][n]);
+    printf("Optimal BST:\n");
+    printTree(1, n, 0, "");
+    return 0;
+}
+
+SAMPLE RUN:
+
+Enter number of words: 5
+Enter 5 words in sorted order:
+and is of the to
+Enter search probabilities p1..p5:
+0.15 0.10 0.05 0.10 0.20
+Enter failure probabilities q0..q5:
+0.05 0.10 0.05 0.05 0.05 0.10
+
+Minimum expected search cost = 2.75
+Optimal BST:
+  "is" is the root
+  "and" is the left child of "is"
+  "to" is the right child of "is"
+  "the" is the left child of "to"
+  "of" is the left child of "the"
+
+
+------------------------------------------------------------------------------
+SN 16: String matching for plagiarism detection: Naive, KMP, Rabin-Karp
+------------------------------------------------------------------------------
+Technique: String matching (n = text length, m = pattern length)
+Time complexity:
+  - Naive: worst O((n - m + 1) * m) = O(nm); best O(n). Space O(1)
+  - KMP: O(n + m) always (O(m) to build the LPS table + O(n) search; text
+  pointer never moves back). Space O(m)
+  - Rabin-Karp: average O(n + m); worst O(nm) when many hash values collide
+  (spurious hits). Space O(1)
+  - Recommendation for large-scale plagiarism detection: KMP for one pattern
+  (guaranteed linear); Rabin-Karp when searching many patterns at once
+  (compare hashes)
+How it works: Naive tries every shift. KMP precomputes lps[] (the longest
+proper prefix of the pattern that is also a suffix), so after a mismatch it
+shifts the pattern without re-reading text. Rabin-Karp compares a rolling hash
+of the window with the pattern's hash and checks the characters only when the
+hashes match. Part 2 times all three on texts of 10^4, 10^5, 10^6 characters
+(naive's bad case: "aaa...ab").
+
+C PROGRAM:
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAXT 1000001
+#define MAXP 1000
+#define D 256          /* alphabet size for Rabin-Karp */
+#define Q 101          /* a prime for the hash */
+
+char text[MAXT], pat[MAXP];
+int lps[MAXP];
+int show = 1;          /* print match positions (off during timing) */
+
+int naive(char *t, char *p) {
+    int n = strlen(t), m = strlen(p), i, j, count = 0;
+    for (i = 0; i <= n - m; i++) {            /* try every shift */
+        for (j = 0; j < m && t[i + j] == p[j]; j++);
+        if (j == m) {
+            count++;
+            if (show) printf("%d ", i);
+        }
+    }
+    return count;
+}
+
+void computeLPS(char *p, int m) {             /* longest proper prefix that is also a suffix */
+    int len = 0, i = 1;
+    lps[0] = 0;
+    while (i < m) {
+        if (p[i] == p[len]) lps[i++] = ++len;
+        else if (len != 0) len = lps[len - 1];
+        else lps[i++] = 0;
+    }
+}
+
+int kmp(char *t, char *p) {
+    int n = strlen(t), m = strlen(p), i = 0, j = 0, count = 0;
+    computeLPS(p, m);
+    while (i < n) {
+        if (t[i] == p[j]) {
+            i++; j++;
+            if (j == m) {
+                count++;
+                if (show) printf("%d ", i - j);
+                j = lps[j - 1];               /* keep going for overlapping matches */
+            }
+        } else if (j != 0) {
+            j = lps[j - 1];                   /* never move i backwards */
+        } else {
+            i++;
+        }
+    }
+    return count;
+}
+
+int rabinKarp(char *t, char *p) {
+    int n = strlen(t), m = strlen(p), i, j, h = 1, ph = 0, th = 0, count = 0;
+    if (m > n) return 0;
+    for (i = 0; i < m - 1; i++) h = (h * D) % Q;            /* D^(m-1) mod Q */
+    for (i = 0; i < m; i++) {
+        ph = (D * ph + p[i]) % Q;
+        th = (D * th + t[i]) % Q;
+    }
+    for (i = 0; i <= n - m; i++) {
+        if (ph == th) {                                       /* hash match: check characters */
+            for (j = 0; j < m && t[i + j] == p[j]; j++);
+            if (j == m) {
+                count++;
+                if (show) printf("%d ", i);
+            }
+        }
+        if (i < n - m) {                                      /* roll the hash one step */
+            th = (D * (th - t[i] * h) + t[i + m]) % Q;
+            if (th < 0) th += Q;
+        }
+    }
+    return count;
+}
+
+int main() {
+    int sizes[] = {10000, 100000, 1000000};
+    int k, i, n, c1, c2, c3;
+    clock_t s;
+    double t1, t2, t3;
+
+    /* Part 1: the user's text and pattern */
+    printf("Enter text: ");
+    fgets(text, MAXT, stdin);
+    text[strcspn(text, "\n")] = '\0';
+    printf("Enter pattern: ");
+    fgets(pat, MAXP, stdin);
+    pat[strcspn(pat, "\n")] = '\0';
+
+    printf("\nNaive      matches at: "); c1 = naive(text, pat);     printf(" (%d found)\n", c1);
+    printf("KMP        matches at: "); c2 = kmp(text, pat);       printf(" (%d found)\n", c2);
+    printf("Rabin-Karp matches at: "); c3 = rabinKarp(text, pat); printf(" (%d found)\n", c3);
+
+    /* Part 2: timing on texts of different sizes.
+       Text of 'a's with a rare 'b', pattern "aaa...ab": naive's worst case. */
+    show = 0;
+    for (i = 0; i < 99; i++) pat[i] = 'a';
+    pat[99] = 'b'; pat[100] = '\0';
+    printf("\n%10s %12s %12s %12s   (seconds, pattern length 100)\n", "text size", "Naive", "KMP", "Rabin-Karp");
+    for (k = 0; k < 3; k++) {
+        n = sizes[k];
+        for (i = 0; i < n; i++) text[i] = (i % 1000 == 999) ? 'b' : 'a';
+        text[n] = '\0';
+        s = clock(); c1 = naive(text, pat);     t1 = (double)(clock() - s) / CLOCKS_PER_SEC;
+        s = clock(); c2 = kmp(text, pat);       t2 = (double)(clock() - s) / CLOCKS_PER_SEC;
+        s = clock(); c3 = rabinKarp(text, pat); t3 = (double)(clock() - s) / CLOCKS_PER_SEC;
+        printf("%10d %12.6f %12.6f %12.6f   matches %d %d %d\n", n, t1, t2, t3, c1, c2, c3);
+    }
+    return 0;
+}
+
+SAMPLE RUN (times depend on the computer):
+
+Enter text: AABAACAADAABAABA
+Enter pattern: AABA
+
+Naive      matches at: 0 9 12  (3 found)
+KMP        matches at: 0 9 12  (3 found)
+Rabin-Karp matches at: 0 9 12  (3 found)
+
+ text size        Naive          KMP   Rabin-Karp   (seconds, pattern length 100)
+     10000     0.018990     0.000065     0.000083   matches 10 10 10
+    100000     0.029147     0.000614     0.000824   matches 100 100 100
+   1000000     0.234971     0.006165     0.008305   matches 1000 1000 1000
