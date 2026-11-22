@@ -122,9 +122,10 @@ Quick table for the rest (code below):
   SN 16   KMP                               Prefix function      O(n + m)
   SN 16   Rabin-Karp                        Rolling hash         avg O(n + m), worst O(nm)
 
-All programs below are C, compiled with gcc and run on the sample input shown.
-TSP, Hamiltonian and Assignment were also checked against brute force on 150
-random inputs each (all matched).
+For each experiment: technique, time complexity, how it works, pseudocode, C
+program and a sample run. All programs below are C, compiled with gcc and run
+on the sample input shown. TSP, Hamiltonian and Assignment were also checked
+against brute force on 150 random inputs each (all matched).
 
 ------------------------------------------------------------------------------
 EXPERIMENT 1: Recursive Binary Search + time taken vs n (with graph)
@@ -141,6 +142,28 @@ How it works: Compare the key with the middle element; recurse into the left
 or right half. One search is too fast to time, so the program times 10 lakh
 searches for each n and divides. Plot n against time per search: it grows like
 log n (slowly).
+
+PSEUDOCODE:
+
+Algorithm BinarySearch(A, low, high, key)
+    if low > high then
+        return -1                               // range empty: not found
+    mid <- floor((low + high) / 2)
+    if A[mid] = key then
+        return mid
+    else if key < A[mid] then
+        return BinarySearch(A, low, mid - 1, key)    // left half
+    else
+        return BinarySearch(A, mid + 1, high, key)   // right half
+
+Timing experiment
+    for each n in {1000, 5000, 10000, 50000, 100000, 500000, 1000000} do
+        A[0..n-1] <- sorted numbers
+        start <- clock()
+        repeat R times: BinarySearch(A, 0, n - 1, a random key)
+        end <- clock()
+        print n, (end - start) / R              // time per search
+    plot time per search (y) against n (x)
 
 C PROGRAM:
 
@@ -216,13 +239,13 @@ Enter element to search: 23
 Element found at position 6
 
          n     total time (s)      per search (us)
-      1000           0.118368               0.1184
-      5000           0.144696               0.1447
-     10000           0.155786               0.1558
-     50000           0.187337               0.1873
-    100000           0.218363               0.2184
-    500000           0.358656               0.3587
-   1000000           0.549550               0.5495
+      1000           0.127932               0.1279
+      5000           0.155161               0.1552
+     10000           0.168116               0.1681
+     50000           0.204115               0.2041
+    100000           0.236875               0.2369
+    500000           0.370126               0.3701
+   1000000           0.530298               0.5303
 
 Plot n (x-axis) against time per search (y-axis): the curve is log n.
 
@@ -242,6 +265,33 @@ Time complexity:
 How it works: Partition around a pivot (last element): smaller elements go
 left, bigger go right, the pivot lands in its final place. Recurse on both
 sides. Random input gives the n log n curve.
+
+PSEUDOCODE:
+
+Algorithm QuickSort(A, low, high)
+    if low < high then
+        p <- Partition(A, low, high)
+        QuickSort(A, low, p - 1)
+        QuickSort(A, p + 1, high)
+
+Algorithm Partition(A, low, high)
+    pivot <- A[high]                            // last element is the pivot
+    i <- low - 1
+    for j <- low to high - 1 do
+        if A[j] < pivot then
+            i <- i + 1
+            swap A[i] and A[j]
+    swap A[i + 1] and A[high]                   // pivot to its final place
+    return i + 1
+
+Timing experiment
+    for each n in {1000, 5000, 10000, 50000, 100000, 500000} do
+        A[0..n-1] <- random numbers
+        start <- clock()
+        QuickSort(A, 0, n - 1)
+        end <- clock()
+        print n, end - start
+    plot time (y) against n (x)
 
 C PROGRAM:
 
@@ -316,12 +366,12 @@ Enter 7 elements:
 Sorted array: 10 30 40 50 70 80 90 
 
          n        time (s)
-      1000        0.000228
-      5000        0.001718
-     10000        0.002945
-     50000        0.012656
-    100000        0.014579
-    500000        0.078524
+      1000        0.000122
+      5000        0.000863
+     10000        0.002123
+     50000        0.012877
+    100000        0.016416
+    500000        0.085442
 
 Plot n (x-axis) against time (y-axis): the curve is n log n.
 
@@ -339,6 +389,27 @@ queue, print it, and enqueue all unvisited neighbours. DFS: print the vertex,
 then recursively visit each unvisited neighbour. Every vertex printed is
 reachable from the start. adj[i][j] = 1 means an edge i -> j, so the same code
 works for a digraph. In the sample, vertex 5 is not reachable.
+
+PSEUDOCODE:
+
+Algorithm BFS(G, s)
+    for each vertex v do visited[v] <- false
+    visited[s] <- true
+    Enqueue(Q, s)
+    while Q is not empty do
+        v <- Dequeue(Q)
+        print v
+        for each vertex w with adj[v][w] = 1 do
+            if not visited[w] then
+                visited[w] <- true              // mark when enqueued
+                Enqueue(Q, w)
+
+Algorithm DFS(G, v)
+    visited[v] <- true
+    print v
+    for each vertex w with adj[v][w] = 1 do
+        if not visited[w] then
+            DFS(G, w)                           // recursion = stack
 
 C PROGRAM:
 
@@ -431,6 +502,23 @@ in the same set means a cycle).
 
 (a) PRIM'S ALGORITHM
 
+PSEUDOCODE:
+
+Algorithm Prim(cost[0..n-1][0..n-1])
+    for i <- 0 to n - 1 do
+        key[i] <- INF;  inMST[i] <- false
+    key[0] <- 0;  parent[0] <- -1;  total <- 0
+    repeat n times
+        u <- the vertex not in the MST with the smallest key[u]
+        if key[u] = INF then report "graph not connected" and stop
+        inMST[u] <- true
+        total <- total + key[u]
+        for each vertex v not in the MST do
+            if cost[u][v] < key[v] then
+                key[v] <- cost[u][v]            // cheaper way to reach v
+                parent[v] <- u
+    print edges (parent[v], v) for v = 1 .. n - 1, and total
+
 C PROGRAM:
 
 #include <stdio.h>
@@ -503,6 +591,25 @@ Total cost of MST = 16
 
 
 (b) KRUSKAL'S ALGORITHM
+
+PSEUDOCODE:
+
+Algorithm Kruskal(G)
+    E <- list of all edges (u, v, w)
+    sort E by weight w in increasing order
+    for each vertex v do parent[v] <- v         // every vertex is its own set
+    count <- 0;  total <- 0
+    for each edge (u, v, w) in E, in sorted order, while count < n - 1 do
+        ru <- Find(u);  rv <- Find(v)
+        if ru != rv then                        // different sets: no cycle
+            add edge (u, v) to the MST
+            parent[ru] <- rv                    // Union
+            total <- total + w;  count <- count + 1
+    if count < n - 1 then report "graph not connected"
+
+Algorithm Find(v)
+    while parent[v] != v do v <- parent[v]
+    return v
 
 C PROGRAM:
 
@@ -593,6 +700,32 @@ child = take it (only if it fits), right child = leave it (only if the bound,
 i.e. the fractional-knapsack estimate of the best possible profit, beats the
 best answer found so far). The pruning is what makes it faster than trying all
 2^n subsets.
+
+PSEUDOCODE:
+
+// items are sorted so that p[1]/w[1] >= p[2]/w[2] >= ... >= p[n]/w[n]
+Algorithm BKnap(k, cw, cp)                      // cw = weight so far, cp = profit so far
+    if k > n then                               // leaf: every item decided
+        if cp > bestProfit then
+            bestProfit <- cp;  bestX <- x
+        return
+    if cw + w[k] <= M then                      // left child: take item k
+        x[k] <- 1
+        BKnap(k + 1, cw + w[k], cp + p[k])
+    if Bound(k + 1, cw, cp) > bestProfit then   // right child: leave item k
+        x[k] <- 0
+        BKnap(k + 1, cw, cp)
+
+Algorithm Bound(k, cw, cp)                      // fractional-knapsack upper bound
+    b <- cp
+    for j <- k to n do
+        if cw + w[j] <= M then
+            cw <- cw + w[j];  b <- b + p[j]
+        else
+            return b + (M - cw) / w[j] * p[j]   // fraction of item j
+    return b
+
+Call: bestProfit <- 0;  BKnap(1, 0, 0)
 
 C PROGRAM:
 
@@ -701,6 +834,43 @@ i and column j to INF, set [j][1] to INF, reduce again. Child cost = parent
 cost + reduced cost(i, j) + new reduction. Always expand the live node with
 the least cost; kill nodes whose cost is no better than the best tour. The
 sample is the slides example (answer 28).
+
+PSEUDOCODE:
+
+Algorithm TSP_LCBB(C[1..n][1..n])
+    root.R <- copy of C;  root.cost <- Reduce(root.R)
+    root.path <- (1)
+    best <- INF
+    add root to the live list
+    while the live list is not empty do
+        E <- the live node with the least cost  // LC search
+        remove E from the live list
+        if E.cost >= best then continue         // bound: kill E
+        if E.path contains all n cities then
+            tour <- cost of E.path + C[last city][1]
+            if tour < best then
+                best <- tour;  bestPath <- E.path followed by 1
+            continue
+        i <- last city of E.path
+        for each city j not in E.path with E.R[i][j] != INF do   // branch
+            M <- copy of E.R
+            set row i and column j of M to INF
+            M[j][1] <- INF                      // no early return to city 1
+            r <- Reduce(M)
+            child.R <- M;  child.path <- E.path followed by j
+            child.cost <- E.cost + E.R[i][j] + r
+            add child to the live list
+    return best, bestPath
+
+Algorithm Reduce(M)                             // returns the amount subtracted
+    r <- 0
+    for each row i do
+        m <- minimum of row i
+        if m != 0 and m != INF then subtract m from every entry of row i;  r <- r + m
+    for each column j do
+        m <- minimum of column j
+        if m != 0 and m != INF then subtract m from every entry of column j;  r <- r + m
+    return r
 
 C PROGRAM:
 
@@ -853,6 +1023,29 @@ is adjacent to the previous vertex and not used yet; recurse; undo
 a Hamiltonian cycle. TSP answer = cheapest such cycle. (Each cycle is printed
 twice, once in each direction.)
 
+PSEUDOCODE:
+
+// x[1..n] holds the cycle; x[1] = 1 (start city)
+Algorithm Hamiltonian(k)                        // fill position k
+    if k > n then                               // all cities placed
+        if edge (x[n], x[1]) exists then        // can return to the start
+            print x[1], x[2], ..., x[n], x[1] and its cost
+            if cost < best then best <- cost;  bestX <- x
+        return
+    for v <- 2 to n do
+        if IsSafe(v, k) then
+            x[k] <- v
+            Hamiltonian(k + 1)
+            x[k] <- 0                           // backtrack
+
+Algorithm IsSafe(v, k)
+    if there is no edge (x[k-1], v) then return false
+    if v is already one of x[1..k-1] then return false
+    return true
+
+Call: x[1] <- 1;  best <- INF;  Hamiltonian(2)
+TSP answer = bestX with cost best (the cheapest Hamiltonian cycle)
+
 C PROGRAM:
 
 #include <stdio.h>
@@ -959,6 +1152,28 @@ cost so far + for every remaining agent, its cheapest still-free task. If the
 bound is not below the best complete assignment found, prune that branch.
 Sample: textbook 4x4 example, answer 13.
 
+PSEUDOCODE:
+
+// agents and tasks are numbered 1..n; c[i][t] = cost of agent i doing task t
+Algorithm Assign(a, costSoFar)                  // a = next agent to assign
+    if a > n then                               // every agent has a task
+        if costSoFar < best then
+            best <- costSoFar;  bestAssign <- assign
+        return
+    for each task t with used[t] = false do
+        used[t] <- true;  assign[a] <- t
+        if Bound(a + 1, costSoFar + c[a][t]) < best then    // promising?
+            Assign(a + 1, costSoFar + c[a][t])
+        used[t] <- false                        // backtrack
+
+Algorithm Bound(a, costSoFar)                   // lower bound
+    b <- costSoFar
+    for i <- a to n do
+        b <- b + min { c[i][t] : used[t] = false }
+    return b
+
+Call: best <- INF;  Assign(1, 0)
+
 C PROGRAM:
 
 #include <stdio.h>
@@ -1052,6 +1267,33 @@ that a search falls between word i and i+1 (a word with no entry). e[i][j] =
 min over root r of e[i][r-1] + e[r+1][j] + w[i][j], where w[i][j] = sum of p
 and q in the range. Frequent words end up near the root. Sample = CLRS example
 (cost 2.75).
+
+PSEUDOCODE:
+
+// p[1..n] = probability of searching word i
+// q[0..n] = probability that a search ends between word i and i+1 (not found)
+Algorithm OptimalBST(p, q, n)
+    for i <- 1 to n + 1 do
+        e[i][i-1] <- q[i-1]                     // empty subtree: one dummy leaf
+        w[i][i-1] <- q[i-1]
+    for l <- 1 to n do                          // l = number of words in the subtree
+        for i <- 1 to n - l + 1 do
+            j <- i + l - 1
+            e[i][j] <- INF
+            w[i][j] <- w[i][j-1] + p[j] + q[j]
+            for r <- i to j do                  // try every word as the root
+                t <- e[i][r-1] + e[r+1][j] + w[i][j]
+                if t < e[i][j] then
+                    e[i][j] <- t
+                    root[i][j] <- r
+    return e[1][n] (minimum expected cost) and root
+
+Algorithm PrintTree(i, j, parent)
+    if i > j then return
+    r <- root[i][j]
+    print word r as the root, or as the left/right child of parent
+    PrintTree(i, r - 1, r)
+    PrintTree(r + 1, j, r)
 
 C PROGRAM:
 
@@ -1151,6 +1393,52 @@ shifts the pattern without re-reading text. Rabin-Karp compares a rolling hash
 of the window with the pattern's hash and checks the characters only when the
 hashes match. Part 2 times all three on texts of 10^4, 10^5, 10^6 characters
 (naive's bad case: "aaa...ab").
+
+PSEUDOCODE:
+
+// T[0..n-1] = text, P[0..m-1] = pattern
+Algorithm NaiveMatch(T, P)
+    for s <- 0 to n - m do                      // every shift
+        j <- 0
+        while j < m and T[s + j] = P[j] do j <- j + 1
+        if j = m then print "match at", s
+
+Algorithm ComputeLPS(P)                         // lps[i] = longest proper prefix = suffix of P[0..i]
+    lps[0] <- 0;  len <- 0;  i <- 1
+    while i < m do
+        if P[i] = P[len] then
+            len <- len + 1;  lps[i] <- len;  i <- i + 1
+        else if len != 0 then
+            len <- lps[len - 1]
+        else
+            lps[i] <- 0;  i <- i + 1
+
+Algorithm KMPMatch(T, P)
+    ComputeLPS(P)
+    i <- 0;  j <- 0
+    while i < n do
+        if T[i] = P[j] then
+            i <- i + 1;  j <- j + 1
+            if j = m then
+                print "match at", i - j
+                j <- lps[j - 1]                 // continue for overlapping matches
+        else if j != 0 then
+            j <- lps[j - 1]                     // i never moves back
+        else
+            i <- i + 1
+
+Algorithm RabinKarp(T, P, d, q)                 // d = alphabet size, q = a prime
+    h <- d^(m-1) mod q
+    p <- 0;  t <- 0
+    for i <- 0 to m - 1 do
+        p <- (d * p + P[i]) mod q               // hash of the pattern
+        t <- (d * t + T[i]) mod q               // hash of the first window
+    for s <- 0 to n - m do
+        if p = t then                           // hashes equal: check characters
+            if T[s .. s+m-1] = P[0 .. m-1] then print "match at", s
+        if s < n - m then                       // roll the hash one step right
+            t <- (d * (t - T[s] * h) + T[s + m]) mod q
+            if t < 0 then t <- t + q
 
 C PROGRAM:
 
@@ -1280,6 +1568,6 @@ KMP        matches at: 0 9 12  (3 found)
 Rabin-Karp matches at: 0 9 12  (3 found)
 
  text size        Naive          KMP   Rabin-Karp   (seconds, pattern length 100)
-     10000     0.018990     0.000065     0.000083   matches 10 10 10
-    100000     0.029147     0.000614     0.000824   matches 100 100 100
-   1000000     0.234971     0.006165     0.008305   matches 1000 1000 1000
+     10000     0.010151     0.000208     0.000275   matches 10 10 10
+    100000     0.032788     0.000667     0.000891   matches 100 100 100
+   1000000     0.253905     0.006679     0.008878   matches 1000 1000 1000
